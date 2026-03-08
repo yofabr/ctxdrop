@@ -3,12 +3,14 @@ import { getDefaultIgnorePatterns } from "../core/filter";
 import { formatOutput, type OutputFormat } from "../core/formatter";
 import { startSpinner, stopSpinner, logInfo, logError } from "../utils/logger";
 
+// CLI argument types
 export interface RunArgs {
   raw: boolean;
   output: string;
   dir: string;
 }
 
+// Main orchestration: scan -> format -> output
 export async function run(args: RunArgs): Promise<void> {
   const targetDir = args.dir || ".";
   const outputFormat = (args.output || "md") as OutputFormat;
@@ -24,6 +26,7 @@ export async function run(args: RunArgs): Promise<void> {
 
     stopSpinner(`Found ${files.length} files`);
 
+    // Raw output: path + content, no formatting
     if (isRaw) {
       for (const file of files) {
         logInfo(`${file.relativePath}`);

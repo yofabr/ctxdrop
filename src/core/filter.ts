@@ -1,5 +1,7 @@
+// Ignore pattern type: string or regex
 export type IgnorePattern = string | RegExp;
 
+// Default patterns for files/dirs to skip
 const DEFAULT_IGNORE_PATTERNS: IgnorePattern[] = [
   "node_modules",
   ".git",
@@ -27,6 +29,7 @@ const DEFAULT_IGNORE_PATTERNS: IgnorePattern[] = [
   ".env.*.local",
 ];
 
+// Check if a file should be ignored
 export function shouldIgnore(
   filePath: string,
   patterns: IgnorePattern[] = DEFAULT_IGNORE_PATTERNS
@@ -48,6 +51,7 @@ export function shouldIgnore(
   return false;
 }
 
+// Export defaults for external use
 export function getDefaultIgnorePatterns(): IgnorePattern[] {
   return [...DEFAULT_IGNORE_PATTERNS];
 }

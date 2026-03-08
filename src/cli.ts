@@ -3,6 +3,7 @@
 import { defineCommand, runMain } from "citty";
 import { run } from "./commands/run";
 
+// Define the "run" subcommand with its arguments
 const runCommand = defineCommand({
   meta: {
     name: "run",
@@ -33,6 +34,7 @@ const runCommand = defineCommand({
   },
 });
 
+// Main entry command
 const main = defineCommand({
   meta: {
     name: "ctxdrop",

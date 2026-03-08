@@ -6,6 +6,7 @@ export interface FormatterOptions {
   format: OutputFormat;
 }
 
+// Main entry: format files into selected output format
 export function formatOutput(files: FileInfo[], options: FormatterOptions): string {
   const { format } = options;
 
@@ -21,6 +22,7 @@ export function formatOutput(files: FileInfo[], options: FormatterOptions): stri
   }
 }
 
+// Format as Markdown: ## filename\n```\ncontent\n```
 function formatMarkdown(files: FileInfo[]): string {
   const parts: string[] = ["# Codebase Context\n"];
 
@@ -34,6 +36,7 @@ function formatMarkdown(files: FileInfo[]): string {
   return parts.join("");
 }
 
+// Format as XML: <file path="..."><![CDATA[content]]></file>
 function formatXml(files: FileInfo[]): string {
   const parts: string[] = ['<?xml version="1.0" encoding="UTF-8"?>\n'];
   parts.push("<context>\n");
@@ -48,6 +51,7 @@ function formatXml(files: FileInfo[]): string {
   return parts.join("");
 }
 
+// Format as plain text: === filename ===\ncontent\n
 function formatText(files: FileInfo[]): string {
   const parts: string[] = [];
 
@@ -60,6 +64,7 @@ function formatText(files: FileInfo[]): string {
   return parts.join("");
 }
 
+// Escape XML special characters
 function escapeXml(str: string): string {
   return str
     .replace(/&/g, "&amp;")

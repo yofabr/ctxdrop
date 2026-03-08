@@ -2,17 +2,20 @@ import { readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
 import { shouldIgnore, type IgnorePattern } from "./filter";
 
+// File metadata structure
 export interface FileInfo {
   path: string;
   relativePath: string;
   content?: string;
 }
 
+// Scanner options
 export interface ScanOptions {
   ignorePatterns?: IgnorePattern[];
   includeContent?: boolean;
 }
 
+// Main entry: recursively scan directory
 export async function scanDirectory(
   dirPath: string,
   options: ScanOptions = {}
@@ -25,6 +28,7 @@ export async function scanDirectory(
   return files;
 }
 
+// Internal: recursive directory walker
 async function walkDirectory(
   rootPath: string,
   currentPath: string,
@@ -38,10 +42,12 @@ async function walkDirectory(
     const fullPath = join(currentPath, entry.name);
     const relativePath = relative(rootPath, fullPath);
 
+    // Skip ignored files/directories
     if (shouldIgnore(relativePath, ignorePatterns)) {
       continue;
     }
 
+    // Recurse into directories
     if (entry.isDirectory()) {
       await walkDirectory(rootPath, fullPath, files, ignorePatterns, includeContent);
     } else if (entry.isFile()) {
@@ -50,6 +56,7 @@ async function walkDirectory(
         relativePath,
       };
 
+      // Optionally read file content
       if (includeContent) {
         const { readFile } = await import("node:fs/promises");
         fileInfo.content = await readFile(fullPath, "utf-8");
