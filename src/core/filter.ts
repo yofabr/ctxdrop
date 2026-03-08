@@ -1,0 +1,53 @@
+export type IgnorePattern = string | RegExp;
+
+const DEFAULT_IGNORE_PATTERNS: IgnorePattern[] = [
+  "node_modules",
+  ".git",
+  ".svn",
+  ".hg",
+  ".gitignore",
+  "package-lock.json",
+  "yarn.lock",
+  "pnpm-lock.yaml",
+  "bun.lockb",
+  "*.lock",
+  ".DS_Store",
+  "Thumbs.db",
+  "__pycache__",
+  ".pytest_cache",
+  ".next",
+  ".nuxt",
+  ".output",
+  "dist",
+  "build",
+  ".cache",
+  "coverage",
+  ".env",
+  ".env.local",
+  ".env.*.local",
+];
+
+export function shouldIgnore(
+  filePath: string,
+  patterns: IgnorePattern[] = DEFAULT_IGNORE_PATTERNS
+): boolean {
+  const normalizedPath = filePath.replace(/\\/g, "/");
+
+  for (const pattern of patterns) {
+    if (typeof pattern === "string") {
+      if (normalizedPath.includes(pattern)) {
+        return true;
+      }
+    } else if (pattern instanceof RegExp) {
+      if (pattern.test(normalizedPath)) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+export function getDefaultIgnorePatterns(): IgnorePattern[] {
+  return [...DEFAULT_IGNORE_PATTERNS];
+}
