@@ -1,0 +1,22 @@
+{
+  "name": "ctxdrop",
+  "version": "0.1.0",
+  "description": "Pack your codebase into a single context file, ready for any AI agent.",
+  "type": "module",
+  "bin": {
+    "ctxdrop": "dist/cli.js"
+  },
+  "scripts": {
+    "build": "bun build src/cli.ts --outdir dist --target node",
+    "dev": "bun run src/cli.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@clack/prompts": "^1.1.0",
+    "citty": "^0.2.1"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.0"
+  }
+}
