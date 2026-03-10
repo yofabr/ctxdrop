@@ -1,33 +1,6 @@
-// Ignore pattern type: string or regex
-export type IgnorePattern = string | RegExp;
-
 // Default patterns for files/dirs to skip
-const DEFAULT_IGNORE_PATTERNS: IgnorePattern[] = [
-  "node_modules",
-  ".git",
-  ".svn",
-  ".hg",
-  ".gitignore",
-  "package-lock.json",
-  "yarn.lock",
-  "pnpm-lock.yaml",
-  "bun.lockb",
-  "*.lock",
-  ".DS_Store",
-  "Thumbs.db",
-  "__pycache__",
-  ".pytest_cache",
-  ".next",
-  ".nuxt",
-  ".output",
-  "dist",
-  "build",
-  ".cache",
-  "coverage",
-  ".env",
-  ".env.local",
-  ".env.*.local",
-];
+
+import { DEFAULT_IGNORE_PATTERNS, type IgnorePattern } from "../constants/ignore-patters";
 
 // Check if a file should be ignored
 export function shouldIgnore(
