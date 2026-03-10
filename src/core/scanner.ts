@@ -1,5 +1,5 @@
 import { readdir } from "node:fs/promises";
-import { join, relative } from "node:path";
+import { join, relative, dirname } from "node:path";
 import { shouldIgnore } from "./filter";
 import type { IgnorePattern } from "../constants/ignore-patters";
 
@@ -8,6 +8,11 @@ export interface FileInfo {
   path: string;
   relativePath: string;
   content?: string;
+}
+
+// File grouped by directory
+export interface DirectoryFiles {
+  [directory: string]: Omit<FileInfo, "directory">[];
 }
 
 // Scanner options
@@ -27,6 +32,104 @@ export async function scanDirectory(
   await walkDirectory(dirPath, dirPath, files, ignorePatterns, includeContent);
 
   return files;
+}
+
+// Helper: list files grouped by directory
+export async function listFilesByDirectory(
+  dirPath: string,
+  options: ScanOptions = {}
+): Promise<DirectoryFiles> {
+  const files = await scanDirectory(dirPath, options);
+  const grouped: DirectoryFiles = {};
+
+  for (const file of files) {
+    const directory = dirname(file.relativePath) || ".";
+    if (!grouped[directory]) {
+      grouped[directory] = [];
+    }
+    grouped[directory].push({ path: file.path, relativePath: file.relativePath, content: file.content });
+  }
+
+  return grouped;
+}
+
+// Convert directory files structure to tree string
+export function formatAsTree(
+  directoryFiles: DirectoryFiles
+): string {
+  const rootNameStr = "Project/";
+
+  const directories = Object.keys(directoryFiles).filter(d => d !== ".").sort();
+  const rootFiles = directoryFiles["."] || [];
+
+  const dirContents: Record<string, { dirs: Set<string>; files: Set<string> }> = {};
+
+  for (const dir of directories) {
+    const parts = dir.split("/");
+    for (let i = 0; i < parts.length; i++) {
+      const currentPath = parts.slice(0, i + 1).join("/");
+      if (!dirContents[currentPath]) {
+        dirContents[currentPath] = { dirs: new Set(), files: new Set() };
+      }
+      if (i < parts.length - 1) {
+        dirContents[currentPath].dirs.add(parts[i + 1]);
+      }
+    }
+    for (const file of directoryFiles[dir]) {
+      const fileName = file.relativePath.split("/").pop() || "";
+      if (!dirContents[dir]) {
+        dirContents[dir] = { dirs: new Set(), files: new Set() };
+      }
+      dirContents[dir].files.add(fileName);
+    }
+  }
+
+  if (!dirContents["."]) {
+    dirContents["."] = { dirs: new Set(), files: new Set() };
+  }
+  for (const file of rootFiles) {
+    const fileName = file.relativePath.split("/").pop() || "";
+    dirContents["."].files.add(fileName);
+  }
+  for (const dir of directories) {
+    const parts = dir.split("/");
+    if (parts.length === 1) {
+      dirContents["."].dirs.add(parts[0]);
+    }
+  }
+
+  function buildTree(currentPath: string, prefix: string = "", isLast: boolean = true, isRoot: boolean = true): string[] {
+    const lines: string[] = [];
+    const contents = dirContents[currentPath];
+
+    if (!isRoot && currentPath) {
+      const dirName = currentPath.split("/").pop() || currentPath;
+      lines.push(`${prefix}${isLast ? "└── " : "├── "}${dirName}/`);
+      prefix += isLast ? "    " : "│   ";
+    }
+
+    if (!contents) {
+      return lines;
+    }
+
+    const sortedDirs = Array.from(contents.dirs).sort();
+    const sortedFiles = Array.from(contents.files).sort();
+
+    for (let i = 0; i < sortedDirs.length; i++) {
+      const isLastDir = i === sortedDirs.length - 1 && sortedFiles.length === 0;
+      const nextPath = currentPath === "." ? sortedDirs[i] : `${currentPath}/${sortedDirs[i]}`;
+      lines.push(...buildTree(nextPath, prefix, isLastDir, false));
+    }
+
+    for (let i = 0; i < sortedFiles.length; i++) {
+      const isLastFile = i === sortedFiles.length - 1;
+      lines.push(`${prefix}${isLastFile ? "└── " : "├── "}${sortedFiles[i]}`);
+    }
+
+    return lines;
+  }
+
+  return [rootNameStr, ...buildTree(".")].join("\n");
 }
 
 // Internal: recursive directory walker
