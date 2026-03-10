@@ -1,7 +1,7 @@
 import { readdir } from "node:fs/promises";
-import { join, relative, dirname } from "node:path";
-import { shouldIgnore } from "./filter";
+import { dirname, join, relative } from "node:path";
 import type { IgnorePattern } from "../constants/ignore-patters";
+import { shouldIgnore } from "./filter";
 
 // File metadata structure
 export interface FileInfo {
@@ -24,7 +24,7 @@ export interface ScanOptions {
 // Main entry: recursively scan directory
 export async function scanDirectory(
   dirPath: string,
-  options: ScanOptions = {}
+  options: ScanOptions = {},
 ): Promise<FileInfo[]> {
   const { ignorePatterns, includeContent = false } = options;
   const files: FileInfo[] = [];
@@ -37,7 +37,7 @@ export async function scanDirectory(
 // Helper: list files grouped by directory
 export async function listFilesByDirectory(
   dirPath: string,
-  options: ScanOptions = {}
+  options: ScanOptions = {},
 ): Promise<DirectoryFiles> {
   const files = await scanDirectory(dirPath, options);
   const grouped: DirectoryFiles = {};
@@ -47,19 +47,23 @@ export async function listFilesByDirectory(
     if (!grouped[directory]) {
       grouped[directory] = [];
     }
-    grouped[directory].push({ path: file.path, relativePath: file.relativePath, content: file.content });
+    grouped[directory].push({
+      path: file.path,
+      relativePath: file.relativePath,
+      content: file.content,
+    });
   }
 
   return grouped;
 }
 
 // Convert directory files structure to tree string
-export function formatAsTree(
-  directoryFiles: DirectoryFiles
-): string {
+export function formatAsTree(directoryFiles: DirectoryFiles): string {
   const rootNameStr = "Project/";
 
-  const directories = Object.keys(directoryFiles).filter(d => d !== ".").sort();
+  const directories = Object.keys(directoryFiles)
+    .filter((d) => d !== ".")
+    .sort();
   const rootFiles = directoryFiles["."] || [];
 
   const dirContents: Record<string, { dirs: Set<string>; files: Set<string> }> = {};
@@ -98,14 +102,15 @@ export function formatAsTree(
     }
   }
 
-  function buildTree(currentPath: string, prefix: string = "", isLast: boolean = true, isRoot: boolean = true): string[] {
+  function buildTree(currentPath: string, prefix = "", isLast = true, isRoot = true): string[] {
     const lines: string[] = [];
     const contents = dirContents[currentPath];
+    let prefixForChildren = prefix;
 
     if (!isRoot && currentPath) {
       const dirName = currentPath.split("/").pop() || currentPath;
       lines.push(`${prefix}${isLast ? "└── " : "├── "}${dirName}/`);
-      prefix += isLast ? "    " : "│   ";
+      prefixForChildren = prefix + (isLast ? "    " : "│   ");
     }
 
     if (!contents) {
@@ -118,12 +123,12 @@ export function formatAsTree(
     for (let i = 0; i < sortedDirs.length; i++) {
       const isLastDir = i === sortedDirs.length - 1 && sortedFiles.length === 0;
       const nextPath = currentPath === "." ? sortedDirs[i] : `${currentPath}/${sortedDirs[i]}`;
-      lines.push(...buildTree(nextPath, prefix, isLastDir, false));
+      lines.push(...buildTree(nextPath, prefixForChildren, isLastDir, false));
     }
 
     for (let i = 0; i < sortedFiles.length; i++) {
       const isLastFile = i === sortedFiles.length - 1;
-      lines.push(`${prefix}${isLastFile ? "└── " : "├── "}${sortedFiles[i]}`);
+      lines.push(`${prefixForChildren}${isLastFile ? "└── " : "├── "}${sortedFiles[i]}`);
     }
 
     return lines;
@@ -138,7 +143,7 @@ async function walkDirectory(
   currentPath: string,
   files: FileInfo[],
   ignorePatterns?: IgnorePattern[],
-  includeContent?: boolean
+  includeContent?: boolean,
 ): Promise<void> {
   const entries = await readdir(currentPath, { withFileTypes: true });
 

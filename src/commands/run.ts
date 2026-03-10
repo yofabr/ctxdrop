@@ -14,7 +14,9 @@ export async function run(__args: RunArgs): Promise<void> {
   // const targetDir = args.dir || ".";
   // const outputFormat = (args.output || "md") as OutputFormat;
   // const isRaw = args.raw ?? false;
-  success("Welcome! ctxdrop packs your codebase into a single context file, ready for any AI agent.")
+  success(
+    "Welcome! ctxdrop packs your codebase into a single context file, ready for any AI agent.",
+  );
 
   // try {
   // } catch (error) {

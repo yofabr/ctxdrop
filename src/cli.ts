@@ -1,7 +1,7 @@
 #!/usr/bin/env bun
 
 import { defineCommand, runMain } from "citty";
-import { run } from "./commands/run";
+import { type RunArgs, run } from "./commands/run";
 
 // Define the "run" subcommand with its arguments
 const runCommand = defineCommand({
@@ -30,7 +30,7 @@ const runCommand = defineCommand({
     },
   },
   async run(context) {
-    await run(context.args as any);
+    await run(context.args as RunArgs);
   },
 });
 

@@ -5,7 +5,7 @@ import { DEFAULT_IGNORE_PATTERNS, type IgnorePattern } from "../constants/ignore
 // Check if a file should be ignored
 export function shouldIgnore(
   filePath: string,
-  patterns: IgnorePattern[] = DEFAULT_IGNORE_PATTERNS
+  patterns: IgnorePattern[] = DEFAULT_IGNORE_PATTERNS,
 ): boolean {
   const normalizedPath = filePath.replace(/\\/g, "/");
 

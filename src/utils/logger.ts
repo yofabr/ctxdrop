@@ -64,7 +64,7 @@ export class Logger {
   private log(level: LogLevel, message: string, ...args: unknown[]): void {
     if (this.silent) return;
 
-    const msg = args.length > 0 ? `${message} ${args.map(a => String(a)).join(" ")}` : message;
+    const msg = args.length > 0 ? `${message} ${args.map((a) => String(a)).join(" ")}` : message;
     const timestamp = this.timestamp ? `${colorize(new Date().toISOString(), "gray")} ` : "";
     const formatted = format(level, msg, this.prefix);
 
@@ -144,13 +144,13 @@ export interface SpinnerOptions {
 }
 
 class InteractiveSpinner {
-  private currentMessage: string = "";
+  private currentMessage = "";
   private frames: string[] = ["⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"];
   private interval: NodeJS.Timeout | null = null;
-  private active: boolean = false;
+  private active = false;
   private color: LogColor = "cyan";
 
-  start(message: string = "Loading..."): void {
+  start(message = "Loading..."): void {
     this.currentMessage = message;
     this.active = true;
     let frameIndex = 0;
@@ -170,7 +170,7 @@ class InteractiveSpinner {
       this.interval = null;
     }
 
-    process.stdout.write("\r" + " ".repeat(this.currentMessage.length + 3) + "\r");
+    process.stdout.write(`\r${" ".repeat(this.currentMessage.length + 3)}\r`);
     if (message) {
       console.log(format("success", message));
     }
@@ -185,7 +185,7 @@ class InteractiveSpinner {
       this.interval = null;
     }
 
-    process.stdout.write("\r" + " ".repeat(this.currentMessage.length + 3) + "\r");
+    process.stdout.write(`\r${" ".repeat(this.currentMessage.length + 3)}\r`);
     if (message) {
       console.log(format("error", message));
     }
@@ -221,19 +221,20 @@ const progressWidth = 20;
 export function renderProgress(percent: number, message?: string): string {
   const filled = Math.round((percent / 100) * progressWidth);
   const empty = progressWidth - filled;
-  const bar = colorize(progressChars[0].repeat(filled), "green") + 
-              colorize(progressChars[3].repeat(empty), "gray");
+  const bar =
+    colorize(progressChars[0].repeat(filled), "green") +
+    colorize(progressChars[3].repeat(empty), "gray");
   const pct = colorize(`${percent.toFixed(0)}%`, "cyan");
   const msg = message ? ` ${message}` : "";
   return `[${bar}] ${pct}${msg}`;
 }
 
 export function updateProgress(percent: number, message?: string): void {
-  process.stdout.write("\r" + renderProgress(percent, message));
+  process.stdout.write(`\r${renderProgress(percent, message)}`);
 }
 
 export function clearProgress(): void {
-  process.stdout.write("\r" + " ".repeat(80) + "\r");
+  process.stdout.write(`\r${" ".repeat(80)}\r`);
 }
 
 export interface TableColumn {
@@ -247,26 +248,30 @@ export interface TableRow {
 }
 
 export function renderTable(columns: TableColumn[], rows: TableRow[]): void {
-  const widths = columns.map(col => {
+  const widths = columns.map((col) => {
     const contentWidth = Math.max(
       col.width || 0,
       col.header.length,
-      ...rows.map(row => (row[col.key] || "").length)
+      ...rows.map((row) => (row[col.key] || "").length),
     );
     return contentWidth;
   });
 
-  const headerLine = columns.map((col, i) => {
-    return col.header.padEnd(widths[i]);
-  }).join(" | ");
+  const headerLine = columns
+    .map((col, i) => {
+      return col.header.padEnd(widths[i]);
+    })
+    .join(" | ");
 
   console.log(colorize(headerLine, "cyan"));
-  console.log(colorize(widths.map(w => "─".repeat(w)).join("-+-"), "gray"));
+  console.log(colorize(widths.map((w) => "─".repeat(w)).join("-+-"), "gray"));
 
   for (const row of rows) {
-    const rowLine = columns.map((col, i) => {
-      return (row[col.key] || "").padEnd(widths[i]);
-    }).join(" | ");
+    const rowLine = columns
+      .map((col, i) => {
+        return (row[col.key] || "").padEnd(widths[i]);
+      })
+      .join(" | ");
     console.log(rowLine);
   }
 }
@@ -274,35 +279,35 @@ export function renderTable(columns: TableColumn[], rows: TableRow[]): void {
 export function box(text: string, options: { title?: string; color?: LogColor } = {}): void {
   const { title, color = "cyan" } = options;
   const lines = text.split("\n");
-  const maxWidth = Math.max(...lines.map(l => l.length), title?.length || 0);
+  const maxWidth = Math.max(...lines.map((l) => l.length), title?.length || 0);
   const border = colorize("─".repeat(maxWidth + 2), color);
 
   if (title) {
     const titleLine = colorize(`│ ${title.padEnd(maxWidth)} │`, color);
-    console.log(colorize("┌" + border + "┐", color));
+    console.log(colorize(`┌${border}┐`, color));
     console.log(titleLine);
-    console.log(colorize("├" + border + "┤", color));
+    console.log(colorize(`├${border}┤`, color));
   } else {
-    console.log(colorize("┌" + border + "┐", color));
+    console.log(colorize(`┌${border}┐`, color));
   }
 
   for (const line of lines) {
     console.log(colorize(`│ ${line.padEnd(maxWidth)} │`, color));
   }
 
-  console.log(colorize("└" + border + "┘", color));
+  console.log(colorize(`└${border}┘`, color));
 }
 
-export function bulletList(items: string[], ordered: boolean = false): void {
+export function bulletList(items: string[], ordered = false): void {
   items.forEach((item, index) => {
-    const prefix = ordered ? `${colorize(index + 1 + ".", "cyan")}` : colorize("•", "cyan");
+    const prefix = ordered ? `${colorize(`${index + 1}.`, "cyan")}` : colorize("•", "cyan");
     console.log(`  ${prefix} ${item}`);
   });
 }
 
-export function keyValue(key: string, value: string, indent: number = 0): void {
+export function keyValue(key: string, value: string, indent = 0): void {
   const spaces = " ".repeat(indent);
-  console.log(`${spaces}${colorize(key + ":", "yellow")} ${value}`);
+  console.log(`${spaces}${colorize(`${key}:`, "yellow")} ${value}`);
 }
 
 export interface DividerOptions {
@@ -316,12 +321,15 @@ export function divider(options: DividerOptions = {}): void {
   console.log(colorize(char.repeat(width), color));
 }
 
-export function indent(text: string, spaces: number = 2): string {
+export function indent(text: string, spaces = 2): string {
   const indentStr = " ".repeat(spaces);
-  return text.split("\n").map(line => indentStr + line).join("\n");
+  return text
+    .split("\n")
+    .map((line) => indentStr + line)
+    .join("\n");
 }
 
-export function truncate(text: string, maxLength: number, suffix: string = "..."): string {
+export function truncate(text: string, maxLength: number, suffix = "..."): string {
   if (text.length <= maxLength) return text;
   return text.slice(0, maxLength - suffix.length) + suffix;
 }
