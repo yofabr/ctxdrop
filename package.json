@@ -9,13 +9,17 @@
   "scripts": {
     "build": "bun build src/cli.ts --outdir dist --target node",
     "dev": "bun run src/cli.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "test": "bun test"
   },
   "dependencies": {
     "@clack/prompts": "^1.1.0",
     "citty": "^0.2.1"
   },
   "devDependencies": {
+    "@biomejs/biome": "^1.9.0",
     "@types/bun": "latest",
     "typescript": "^5.7.0"
   }
