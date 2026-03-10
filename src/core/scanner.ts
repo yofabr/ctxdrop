@@ -1,6 +1,7 @@
 import { readdir } from "node:fs/promises";
 import { join, relative } from "node:path";
-import { shouldIgnore, type IgnorePattern } from "./filter";
+import { shouldIgnore } from "./filter";
+import type { IgnorePattern } from "../constants/ignore-patters";
 
 // File metadata structure
 export interface FileInfo {
