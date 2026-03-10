@@ -1,5 +1,5 @@
 {
-  description = "ctxdrop - Pack your codebase into a single context file";
+  description = "ctxdrop - Pack your codebase into a single context file for AI agents to use";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-24.11";
