@@ -50,21 +50,3 @@ bun run typecheck
 # Build for production
 bun run build
 ```
-
-## Project Structure
-
-```
-ctxdrop/
-├── src/
-│   ├── cli.ts              # Entry point
-│   ├── commands/
-│   │   └── run.ts          # Run command
-│   ├── core/
-│   │   ├── scanner.ts      # Directory walker
-│   │   ├── filter.ts       # Ignore patterns
-│   │   └── formatter.ts    # Output formatters
-│   └── utils/
-│       └── logger.ts       # CLI logger
-├── package.json
-└── tsconfig.json
-```
