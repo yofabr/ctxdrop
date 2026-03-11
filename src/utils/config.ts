@@ -54,11 +54,42 @@ export async function GetConfig(configPath?: string): Promise<Config> {
 }
 
 export async function createConfigFile(filePath?: string): Promise<string> {
-  const targetPath = filePath || DEFAULT_CONFIG_PATH;
+  let targetPath = filePath || DEFAULT_CONFIG_PATH;
+
+  if (!targetPath.endsWith(".json")) {
+    if (await isDirectory(targetPath)) {
+      targetPath = path.join(targetPath, "config.json");
+    } else if (!path.extname(targetPath)) {
+      targetPath = targetPath + ".json";
+    }
+  }
+
+  if (await fileExists(targetPath)) {
+    throw new Error(`Config file already exists at: ${targetPath}`);
+  }
+
   const dir = path.dirname(targetPath);
 
   await fs.mkdir(dir, { recursive: true });
   await fs.writeFile(targetPath, JSON.stringify(DEFAULT_CONFIG, null, 2) + "\n", "utf-8");
 
   return targetPath;
+}
+
+async function isDirectory(filePath: string): Promise<boolean> {
+  try {
+    const stat = await fs.stat(filePath);
+    return stat.isDirectory();
+  } catch {
+    return false;
+  }
+}
+
+async function fileExists(filePath: string): Promise<boolean> {
+  try {
+    const stat = await fs.stat(filePath);
+    return stat.isFile();
+  } catch {
+    return false;
+  }
 }
