@@ -12,6 +12,16 @@ export interface Config {
   output: string;
 }
 
+export interface ValidationError {
+  field: string;
+  message: string;
+}
+
+export interface ConfigValidationResult {
+  valid: boolean;
+  errors: ValidationError[];
+}
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEFAULT_CONFIG_PATH = path.resolve(__dirname, "../../config/config.json");
 
@@ -29,8 +39,66 @@ export function getDefaultConfig(): Config {
   return { ...DEFAULT_CONFIG };
 }
 
+export function validateConfig(config: Config): ConfigValidationResult {
+  const errors: ValidationError[] = [];
+
+  if (!config.model.api_key || config.model.api_key.trim() === "") {
+    errors.push({
+      field: "model.api_key",
+      message: "API key is required. Run 'ctxdrop config' to set it up.",
+    });
+  }
+
+  if (!config.model.model_name || config.model.model_name.trim() === "") {
+    errors.push({
+      field: "model.model_name",
+      message: "Model name is required.",
+    });
+  }
+
+  if (!config.src || config.src.trim() === "") {
+    errors.push({
+      field: "src",
+      message: "Source directory is required.",
+    });
+  }
+
+  if (!config.output || config.output.trim() === "") {
+    errors.push({
+      field: "output",
+      message: "Output directory is required.",
+    });
+  }
+
+  return {
+    valid: errors.length === 0,
+    errors,
+  };
+}
+
+async function findConfigFile(providedPath?: string): Promise<string | null> {
+  const searchPaths = providedPath
+    ? [providedPath]
+    : ["ctxdrop.json", "config/config.json", "./ctxdrop.json"];
+
+  for (const searchPath of searchPaths) {
+    const resolvedPath = path.resolve(searchPath);
+    if (await fileExists(resolvedPath)) {
+      return resolvedPath;
+    }
+  }
+
+  return null;
+}
+
 export async function GetConfig(configPath?: string): Promise<Config> {
-  const filePath = configPath || DEFAULT_CONFIG_PATH;
+  const filePath = await findConfigFile(configPath);
+
+  if (!filePath) {
+    throw new Error(
+      `No config file found. Please create one with 'ctxdrop config' or specify with -c flag.`,
+    );
+  }
 
   try {
     const content = await fs.readFile(filePath, "utf-8");
@@ -46,10 +114,7 @@ export async function GetConfig(configPath?: string): Promise<Config> {
       output: parsed.output ?? DEFAULT_CONFIG.output,
     };
   } catch (error) {
-    if (configPath) {
-      throw new Error(`Failed to load config from ${filePath}: ${error}`);
-    }
-    return getDefaultConfig();
+    throw new Error(`Failed to load config from ${filePath}: ${error}`);
   }
 }
 

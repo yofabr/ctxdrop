@@ -1,12 +1,23 @@
 import { defineCommand } from "citty";
-import { success } from "../utils/logger";
+import { GetConfig, validateConfig } from "../utils/config";
+import { error, success } from "../utils/logger";
 
-// CLI argument types
 export interface RunArgs {
   config: string;
 }
 
-export async function run(__args: RunArgs): Promise<void> {
+export async function run(args: RunArgs): Promise<void> {
+  const config = await GetConfig(args.config);
+
+  const validation = validateConfig(config);
+  if (!validation.valid) {
+    error("Invalid config:");
+    for (const err of validation.errors) {
+      error(`  - ${err.field}: ${err.message}`);
+    }
+    process.exit(1);
+  }
+
   success(
     "Welcome! ctxdrop packs your codebase into a single context file, ready for any AI agent.",
   );
