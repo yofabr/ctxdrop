@@ -3,9 +3,7 @@ import { success } from "../utils/logger";
 
 // CLI argument types
 export interface RunArgs {
-  raw: boolean;
-  output: string;
-  dir: string;
+  config: string;
 }
 
 export async function run(__args: RunArgs): Promise<void> {
@@ -20,23 +18,11 @@ const runCommand = defineCommand({
     description: "Pack codebase into context file",
   },
   args: {
-    raw: {
-      type: "boolean",
-      short: "r",
-      description: "Output raw file paths with content",
-      default: false,
-    },
-    output: {
+    config: {
       type: "string",
-      short: "o",
-      description: "Output format: md|xml|txt",
-      default: "md",
-    },
-    dir: {
-      type: "string",
-      short: "d",
-      description: "Target directory",
-      default: ".",
+      short: "c",
+      description: "Config.json file path",
+      default: "ctxdrop.json",
     },
   },
   async run(context) {
