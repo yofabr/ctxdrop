@@ -125,7 +125,7 @@ export async function createConfigFile(filePath?: string): Promise<string> {
     if (await isDirectory(targetPath)) {
       targetPath = path.join(targetPath, "config.json");
     } else if (!path.extname(targetPath)) {
-      targetPath = targetPath + ".json";
+      targetPath = `${targetPath}.json`;
     }
   }
 
@@ -136,7 +136,7 @@ export async function createConfigFile(filePath?: string): Promise<string> {
   const dir = path.dirname(targetPath);
 
   await fs.mkdir(dir, { recursive: true });
-  await fs.writeFile(targetPath, JSON.stringify(DEFAULT_CONFIG, null, 2) + "\n", "utf-8");
+  await fs.writeFile(targetPath, `${JSON.stringify(DEFAULT_CONFIG, null, 2)}\n`, "utf-8");
 
   return targetPath;
 }

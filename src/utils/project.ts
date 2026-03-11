@@ -65,7 +65,7 @@ function shouldIgnore(name: string, patterns: string[]): boolean {
       const ext = pattern.slice(1);
       if (name.endsWith(ext)) return true;
     }
-    if (name === pattern || name.startsWith(pattern + "/")) return true;
+    if (name === pattern || name.startsWith(`${pattern}/`)) return true;
   }
 
   return false;
@@ -171,21 +171,21 @@ export function generateProjectPrompt(
   tree: string,
   files: FileContent[],
 ): string {
-  let prompt = `# Project Context\n\n`;
-  prompt += `## Configuration\n`;
+  let prompt = "# Project Context\n\n";
+  prompt += "## Configuration\n";
   prompt += `- Source Directory: ${config.src}\n`;
   prompt += `- Output Directory: ${config.output}\n\n`;
-  prompt += `## Project Structure\n`;
+  prompt += "## Project Structure\n";
   prompt += "```\n";
   prompt += tree;
   prompt += "```\n\n";
-  prompt += `## File Contents\n`;
+  prompt += "## File Contents\n";
   prompt += `Total Files: ${files.length}\n\n`;
 
   for (const file of files) {
     prompt += `### ${file.path}\n`;
-    prompt += "```" + file.language + "\n";
-    prompt += file.content + "\n";
+    prompt += `\`\`\`${file.language}\n`;
+    prompt += `${file.content}\n`;
     prompt += "```\n\n";
   }
 

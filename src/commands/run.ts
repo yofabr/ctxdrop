@@ -58,7 +58,7 @@ export async function run(args: RunArgs): Promise<void> {
   success(`Prompt generated: ${prompt.length} characters`);
   info(`Output: ${config.output}context.md`);
 
-  console.log("\n" + prompt);
+  console.log(`\n${prompt}`);
 }
 
 const runCommand = defineCommand({

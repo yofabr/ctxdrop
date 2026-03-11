@@ -1,8 +1,8 @@
 #!/usr/bin/env bun
 
 import { defineCommand, runMain } from "citty";
-import runCommand from "./commands/run";
 import configCommand from "./commands/config";
+import runCommand from "./commands/run";
 
 // Main entry command
 const main = defineCommand({
