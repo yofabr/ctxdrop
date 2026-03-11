@@ -1,6 +1,4 @@
-// import { formatAsTree, listFilesByDirectory, scanDirectory } from "../core/scanner";
-// import { getDefaultIgnorePatterns } from "../core/filter";
-// import { formatOutput, type OutputFormat } from "../core/formatter";
+import { defineCommand } from "citty";
 import { success } from "../utils/logger";
 
 // CLI argument types
@@ -9,20 +7,41 @@ export interface RunArgs {
   output: string;
   dir: string;
 }
-// Main orchestration: scan -> format -> output
+
 export async function run(__args: RunArgs): Promise<void> {
-  // const targetDir = args.dir || ".";
-  // const outputFormat = (args.output || "md") as OutputFormat;
-  // const isRaw = args.raw ?? false;
   success(
     "Welcome! ctxdrop packs your codebase into a single context file, ready for any AI agent.",
   );
-
-  // try {
-  // } catch (error) {
-  //   stopSpinner();
-  //   const message = error instanceof Error ? error.message : "Unknown error";
-  //   logError(`Error: ${message}`);
-  //   process.exit(1);
-  // }
 }
+
+const runCommand = defineCommand({
+  meta: {
+    name: "run",
+    description: "Pack codebase into context file",
+  },
+  args: {
+    raw: {
+      type: "boolean",
+      short: "r",
+      description: "Output raw file paths with content",
+      default: false,
+    },
+    output: {
+      type: "string",
+      short: "o",
+      description: "Output format: md|xml|txt",
+      default: "md",
+    },
+    dir: {
+      type: "string",
+      short: "d",
+      description: "Target directory",
+      default: ".",
+    },
+  },
+  async run(context) {
+    await run(context.args as RunArgs);
+  },
+});
+
+export default runCommand;
