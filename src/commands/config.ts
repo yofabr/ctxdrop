@@ -13,7 +13,7 @@ const configCommand = defineCommand({
       type: "string",
       short: "p",
       description: "Config file path",
-      default: "config/config.json",
+      default: "ctxdrop.json",
     },
   },
   async run(context) {
