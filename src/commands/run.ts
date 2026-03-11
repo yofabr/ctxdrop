@@ -1,6 +1,26 @@
+import path from "node:path";
 import { defineCommand } from "citty";
 import { GetConfig, validateConfig } from "../utils/config";
-import { error, success } from "../utils/logger";
+import { error, info, success } from "../utils/logger";
+import {
+  type FileNode,
+  collectFileContents,
+  formatFileTree,
+  generateProjectPrompt,
+  scanDirectory,
+} from "../utils/project";
+
+function countFiles(nodes: FileNode[]): number {
+  let count = 0;
+  for (const node of nodes) {
+    if (node.type === "file") {
+      count++;
+    } else if (node.children) {
+      count += countFiles(node.children);
+    }
+  }
+  return count;
+}
 
 export interface RunArgs {
   config: string;
@@ -18,9 +38,27 @@ export async function run(args: RunArgs): Promise<void> {
     process.exit(1);
   }
 
-  success(
-    "Welcome! ctxdrop packs your codebase into a single context file, ready for any AI agent.",
+  const srcPath = path.resolve(config.src);
+  info(`Scanning project structure: ${srcPath}`);
+
+  const tree = await scanDirectory(srcPath);
+  const treeOutput = formatFileTree(tree);
+  const fileCount = countFiles(tree);
+  info(`Found ${fileCount} files`);
+
+  info("Reading file contents...");
+  const files = await collectFileContents(tree, srcPath);
+
+  const prompt = generateProjectPrompt(
+    { src: config.src, output: config.output },
+    treeOutput,
+    files,
   );
+
+  success(`Prompt generated: ${prompt.length} characters`);
+  info(`Output: ${config.output}context.md`);
+
+  console.log("\n" + prompt);
 }
 
 const runCommand = defineCommand({
