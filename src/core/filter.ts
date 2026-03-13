@@ -1,6 +1,6 @@
 // Default patterns for files/dirs to skip
 
-import { DEFAULT_IGNORE_PATTERNS, type IgnorePattern } from "../constants/ignore-patters";
+import { DEFAULT_IGNORE_PATTERNS, type IgnorePattern } from "../constants/ignore-patterns";
 
 // Check if a file should be ignored
 export function shouldIgnore(
