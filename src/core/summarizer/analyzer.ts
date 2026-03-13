@@ -224,7 +224,7 @@ function buildFileTree(directories: DirectoryAnalysis[], files: AnalyzedFile[]):
         ? "Project"
         : path.basename(directories[0].path)
       : "Project";
-  const lines: string[] = [rootName + "/"];
+  const lines: string[] = [`${rootName}/`];
 
   const rootFiles = files.filter((f) => !f.relativePath.includes("/"));
   const rootDirs = directories.filter((d) => !d.relativePath.includes("/"));
@@ -261,7 +261,7 @@ function buildDirectoryTree(
 
   for (const dir of childDirs.sort((a, b) => a.name.localeCompare(b.name))) {
     lines.push(`${indent}📁 ${dir.name}/`);
-    lines.push(...buildDirectoryTree(dir, allDirs, allFiles, indent + "  "));
+    lines.push(...buildDirectoryTree(dir, allDirs, allFiles, `${indent}  `));
   }
 
   return lines;

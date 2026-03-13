@@ -17,20 +17,20 @@ Provide clear, concise summaries that help others understand the project quickly
 export function createProjectSummaryPrompt(analysis: ProjectAnalysis): string {
   const { totalFiles, totalDirectories, size, tree, allImportantFiles } = analysis;
 
-  let prompt = `# Project Analysis\n\n`;
+  let prompt = "# Project Analysis\n\n";
 
-  prompt += `## Project Overview\n`;
+  prompt += "## Project Overview\n";
   prompt += `- Total Files: ${totalFiles}\n`;
   prompt += `- Total Directories: ${totalDirectories}\n`;
   prompt += `- Project Size: ${size}\n\n`;
 
-  prompt += `## Project Structure\n`;
+  prompt += "## Project Structure\n";
   prompt += "```\n";
   prompt += tree;
   prompt += "\n```\n\n";
 
   if (allImportantFiles.length > 0) {
-    prompt += `## Key Files\n`;
+    prompt += "## Key Files\n";
     for (const file of allImportantFiles.slice(0, 20)) {
       prompt += `- \`${file.relativePath}\` (${file.classification.type})\n`;
     }
@@ -56,7 +56,7 @@ export function createDirectorySummaryPrompt(dir: DirectoryAnalysis): string {
   }
 
   if (dir.importantFiles.length > 0) {
-    prompt += `**Important Files:**\n`;
+    prompt += "**Important Files:**\n";
     for (const file of dir.importantFiles.slice(0, 5)) {
       prompt += `  - ${file.name} (${file.classification.type})\n`;
     }
@@ -70,7 +70,7 @@ export function createDirectoriesPrompt(directories: DirectoryAnalysis[]): strin
     return "";
   }
 
-  let prompt = `## Directory Breakdown\n\n`;
+  let prompt = "## Directory Breakdown\n\n";
 
   for (const dir of directories) {
     prompt += createDirectorySummaryPrompt(dir);
@@ -93,7 +93,7 @@ export function createFileContentsPrompt(files: AnalyzedFile[], maxFiles: number
     return "";
   }
 
-  let prompt = `## Key File Contents\n\n`;
+  let prompt = "## Key File Contents\n\n";
 
   for (const file of importantFiles) {
     if (!file.content) continue;
@@ -101,11 +101,11 @@ export function createFileContentsPrompt(files: AnalyzedFile[], maxFiles: number
     const maxContentLength = 15000;
     const truncatedContent =
       file.content.length > maxContentLength
-        ? file.content.slice(0, maxContentLength) + "\n... [truncated]"
+        ? `${file.content.slice(0, maxContentLength)}\n... [truncated]`
         : file.content;
 
     prompt += `### ${file.relativePath}\n`;
-    prompt += "```" + getLanguageFromExt(file.extension) + "\n";
+    prompt += `\`\`\`${getLanguageFromExt(file.extension)}\n`;
     prompt += truncatedContent;
     prompt += "\n```\n\n";
   }
