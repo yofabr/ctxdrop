@@ -18,7 +18,7 @@
           src = ./.;
           buildInputs = with pkgs; [ 
             bun
-            node_24
+            nodejs
           ];
           buildPhase = ''
             bun build src/cli.ts --outdir dist --target node
@@ -32,7 +32,7 @@
         };
 
         devShells.default = pkgs.mkShell {
-          buildInputs = with pkgs; [ bun ];
+          buildInputs = with pkgs; [ bun nodejs ];
         };
       }
     );
