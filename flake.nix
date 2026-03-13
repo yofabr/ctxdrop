@@ -16,7 +16,10 @@
           pname = "ctxdrop";
           version = "0.1.0";
           src = ./.;
-          buildInputs = with pkgs; [ bun ];
+          buildInputs = with pkgs; [ 
+            bun
+            node_24
+          ];
           buildPhase = ''
             bun build src/cli.ts --outdir dist --target node
           '';
