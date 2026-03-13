@@ -13,15 +13,17 @@ export interface RunArgs {
 }
 
 export async function run(args: RunArgs): Promise<void> {
-  const config = await GetConfig(args.config);
+  const { config, isNew } = await GetConfig(args.config);
 
-  const validation = validateConfig(config);
-  if (!validation.valid) {
-    error("Invalid config:");
-    for (const err of validation.errors) {
-      error(`  - ${err.field}: ${err.message}`);
+  if (!isNew) {
+    const validation = validateConfig(config);
+    if (!validation.valid) {
+      error("Invalid config:");
+      for (const err of validation.errors) {
+        error(`  - ${err.field}: ${err.message}`);
+      }
+      process.exit(1);
     }
-    process.exit(1);
   }
 
   const srcPath = path.resolve(config.src);

@@ -1,6 +1,8 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import readline from "node:readline";
 import { fileURLToPath } from "node:url";
+import { success } from "../utils/logger";
 
 export interface Config {
   model: {
@@ -91,13 +93,44 @@ async function findConfigFile(providedPath?: string): Promise<string | null> {
   return null;
 }
 
-export async function GetConfig(configPath?: string): Promise<Config> {
+export async function GetConfig(configPath?: string): Promise<{ config: Config; isNew: boolean }> {
   const filePath = await findConfigFile(configPath);
 
   if (!filePath) {
-    throw new Error(
-      `No config file found. Please create one with 'ctxdrop config' or specify with -c flag.`,
-    );
+    const configName = await new Promise<string>((resolve) => {
+      const rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+      });
+      rl.question(
+        "No config file found. Enter a name for the config file (default: ctxdrop.json): ",
+        (answer) => {
+          rl.close();
+          resolve(answer.trim() || "ctxdrop.json");
+        },
+      );
+    });
+
+    const targetPath = configName.trim();
+    const dir = path.dirname(targetPath);
+    if (dir && dir !== ".") {
+      await fs.mkdir(dir, { recursive: true });
+    }
+    await fs.writeFile(targetPath, `${JSON.stringify(DEFAULT_CONFIG, null, 2)}\n`, "utf-8");
+    success(`Config file created at: ${targetPath}`);
+
+    return {
+      config: {
+        model: {
+          model_name: DEFAULT_CONFIG.model.model_name,
+          api_key: DEFAULT_CONFIG.model.api_key,
+          api_base: DEFAULT_CONFIG.model.api_base,
+        },
+        src: DEFAULT_CONFIG.src,
+        output: DEFAULT_CONFIG.output,
+      },
+      isNew: true,
+    };
   }
 
   try {
@@ -105,13 +138,16 @@ export async function GetConfig(configPath?: string): Promise<Config> {
     const parsed = JSON.parse(content) as Partial<Config>;
 
     return {
-      model: {
-        model_name: parsed.model?.model_name ?? DEFAULT_CONFIG.model.model_name,
-        api_key: parsed.model?.api_key ?? DEFAULT_CONFIG.model.api_key,
-        api_base: parsed.model?.api_base ?? DEFAULT_CONFIG.model.api_base,
+      config: {
+        model: {
+          model_name: parsed.model?.model_name ?? DEFAULT_CONFIG.model.model_name,
+          api_key: parsed.model?.api_key ?? DEFAULT_CONFIG.model.api_key,
+          api_base: parsed.model?.api_base ?? DEFAULT_CONFIG.model.api_base,
+        },
+        src: parsed.src ?? DEFAULT_CONFIG.src,
+        output: parsed.output ?? DEFAULT_CONFIG.output,
       },
-      src: parsed.src ?? DEFAULT_CONFIG.src,
-      output: parsed.output ?? DEFAULT_CONFIG.output,
+      isNew: false,
     };
   } catch (error) {
     throw new Error(`Failed to load config from ${filePath}: ${error}`);
