@@ -11,6 +11,13 @@ When analyzing code:
 4. Note important dependencies and how they're used
 5. Identify patterns, frameworks, and technologies used
 
+Output Format:
+- Use proper markdown headings (##, ###)
+- Use bullet points for lists
+- Use tables for structured data comparisons
+- Use code blocks for file paths and code snippets
+- Keep formatting clean and consistent
+
 Provide clear, concise summaries that help others understand the project quickly.`;
 }
 
@@ -156,7 +163,8 @@ function createInstructionPrompt(_analysis: ProjectAnalysis, strategy: SummarySt
     prompt += "1. What this project appears to do\n";
     prompt += "2. The main technologies/frameworks used\n";
     prompt += "3. The key entry points and configuration files\n\n";
-    prompt += "Keep your response concise - maximum 3 paragraphs. Do not include file contents.";
+    prompt += "Keep your response concise - maximum 3 paragraphs. Do not include file contents.\n";
+    prompt += "Use markdown headings (##) for sections and bullet points for lists.";
   } else if (strategy.aiSummaryStyle === "brief") {
     prompt +=
       "Based on the project structure and key files above, provide a comprehensive summary:\n";
@@ -165,7 +173,9 @@ function createInstructionPrompt(_analysis: ProjectAnalysis, strategy: SummarySt
     prompt += "3. Key technologies, frameworks, and dependencies\n";
     prompt += "4. Entry points and main modules\n";
     prompt += "5. Configuration and important files\n\n";
-    prompt += "Keep your response informative but focused - maximum 5 paragraphs.";
+    prompt += "Keep your response informative but focused - maximum 5 paragraphs.\n";
+    prompt +=
+      "Use markdown headings (##) for sections, bullet points for lists, and tables for structured data.";
   } else {
     prompt += "Based on the complete project analysis above, provide a detailed summary:\n";
     prompt += "1. Project purpose and functionality\n";
@@ -176,7 +186,9 @@ function createInstructionPrompt(_analysis: ProjectAnalysis, strategy: SummarySt
     prompt += "6. Directory structure explanation\n";
     prompt += "7. Build/development commands and scripts\n\n";
     prompt +=
-      "Provide a thorough analysis that would help another developer understand this codebase quickly.";
+      "Provide a thorough analysis that would help another developer understand this codebase quickly.\n";
+    prompt +=
+      "Use markdown headings (##, ###), bullet points, tables, and code blocks for clear formatting.";
   }
 
   return prompt;

@@ -4,6 +4,7 @@ import { defineCommand } from "citty";
 import { summarizeProject, summarizeWithAI } from "../core/summarizer";
 import { GetConfig, validateConfig } from "../utils/config";
 import { error, info, success } from "../utils/logger";
+import { formatMarkdownContent } from "../utils/markdown";
 
 export interface RunArgs {
   config: string;
@@ -103,7 +104,9 @@ function generateBriefContext(
 async function writeOutput(content: string, outputDir?: string): Promise<void> {
   const outputPath = path.resolve(outputDir || "./", "context.md");
 
-  await fs.writeFile(outputPath, content, "utf-8");
+  const formattedContent = await formatMarkdownContent(content);
+
+  await fs.writeFile(outputPath, formattedContent, "utf-8");
 
   success(`Output written to: ${outputPath}`);
 }

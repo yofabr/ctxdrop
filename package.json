@@ -16,6 +16,7 @@
   },
   "dependencies": {
     "@clack/prompts": "^1.1.0",
+    "@tpmjs/markdown-formatter": "^0.2.1",
     "citty": "^0.2.1"
   },
   "devDependencies": {
