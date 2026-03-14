@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { verbose } from "../../utils/logger.js";
 import { shouldIgnore } from "../filter.js";
 import { classifyFile, sortByPriority } from "./classifier.js";
 import { type SummaryStrategy, determineProjectSize, getStrategy } from "./strategy.js";
@@ -142,6 +143,7 @@ async function analyzeFiles(
 
     if (includeContents && i < filesToRead) {
       try {
+        verbose(`Reading file: ${file.relativePath}`);
         const content = await fs.readFile(file.path, "utf-8");
         analyzedFile.content = content.slice(0, 50000);
       } catch {

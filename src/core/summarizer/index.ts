@@ -1,5 +1,6 @@
 import { createAgent } from "../../agents/index.js";
 import type { ModelConfig } from "../../agents/types.js";
+import { info, success } from "../../utils/logger.js";
 import { analyzeProject, quickScan } from "./analyzer.js";
 import {
   createDirectorySummaryPrompt,
@@ -54,6 +55,7 @@ export async function summarizeWithAI(
     return summarizeWithTwoPass(rootPath, analysis, modelConfig, options);
   }
 
+  info("Generating AI summary...");
   const agent = createAgent(modelConfig);
 
   const messages = generateContextMessages(analysis, strategy);
@@ -62,6 +64,8 @@ export async function summarizeWithAI(
     messages,
     max_tokens: options?.maxTokens ?? 8192,
   });
+
+  success("AI summary complete");
 
   return {
     summary: response.content,
@@ -93,6 +97,8 @@ async function summarizeWithTwoPass(
 
   const selectedFiles = fullAnalysis.allFiles.filter((f) => selectedPaths.includes(f.relativePath));
 
+  info(`Selected ${selectedPaths.length} important files`);
+
   const selectedFilesContent = selectedFiles.filter((f) => f.content);
 
   const projectSummary = createProjectSummaryPrompt(analysis);
@@ -111,6 +117,8 @@ async function summarizeWithTwoPass(
     messages: finalMessages,
     max_tokens: options?.maxTokens ?? 8192,
   });
+
+  success("AI summary complete");
 
   return {
     summary: response.content,

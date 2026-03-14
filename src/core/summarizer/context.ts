@@ -1,8 +1,109 @@
 import type { ChatMessage } from "../../agents/types.js";
 import type { AnalyzedFile, DirectoryAnalysis, ProjectAnalysis, SummaryStrategy } from "./types.js";
 
+interface TechStack {
+  runtime: string[];
+  packageManager: string[];
+  frameworks: string[];
+  languages: string[];
+}
+
+function detectTechStack(analysis: ProjectAnalysis): TechStack {
+  const tech: TechStack = {
+    runtime: [],
+    packageManager: [],
+    frameworks: [],
+    languages: [],
+  };
+
+  const allFiles = analysis.allFiles;
+
+  for (const file of allFiles) {
+    const name = file.name.toLowerCase();
+
+    if (name === "bun.lockb" || name === "bun.lock") {
+      tech.packageManager.push("Bun");
+      tech.runtime.push("Bun");
+    } else if (name === "pnpm-lock.yaml") {
+      tech.packageManager.push("pnpm");
+    } else if (name === "yarn.lock") {
+      tech.packageManager.push("Yarn");
+    } else if (name === "package-lock.json") {
+      tech.packageManager.push("npm");
+    }
+
+    if (name === "deno.json" || name === "deno.jsonc") {
+      tech.runtime.push("Deno");
+    }
+
+    if (name === "next.config.js" || name === "next.config.mjs" || name === "next.config.ts") {
+      tech.frameworks.push("Next.js");
+    } else if (name === "nuxt.config.js" || name === "nuxt.config.ts") {
+      tech.frameworks.push("Nuxt");
+    } else if (
+      name === "astro.config.mjs" ||
+      name === "astro.config.js" ||
+      name === "astro.config.ts"
+    ) {
+      tech.frameworks.push("Astro");
+    } else if (
+      name === "vite.config.ts" ||
+      name === "vite.config.js" ||
+      name === "vite.config.mts"
+    ) {
+      tech.frameworks.push("Vite");
+    } else if (name === "webpack.config.js" || name === "webpack.config.ts") {
+      tech.frameworks.push("Webpack");
+    } else if (name === "express" || name === "express.ts" || name.includes("express")) {
+      tech.frameworks.push("Express");
+    } else if (name === "fastify" || name.includes("fastify")) {
+      tech.frameworks.push("Fastify");
+    } else if (name === "hono" || name.includes("hono")) {
+      tech.frameworks.push("Hono");
+    } else if (name === "react" || name.includes("react")) {
+      tech.frameworks.push("React");
+    } else if (name === "vue" || name.includes("vue")) {
+      tech.frameworks.push("Vue");
+    } else if (name === "svelte" || name.includes("svelte")) {
+      tech.frameworks.push("Svelte");
+    } else if (name === "tsconfig.json") {
+      if (!tech.languages.includes("TypeScript")) {
+        tech.languages.push("TypeScript");
+      }
+    } else if (name.endsWith(".ts") || name.endsWith(".tsx")) {
+      if (!tech.languages.includes("TypeScript")) {
+        tech.languages.push("TypeScript");
+      }
+    } else if (name.endsWith(".js") || name.endsWith(".jsx")) {
+      if (!tech.languages.includes("JavaScript")) {
+        tech.languages.push("JavaScript");
+      }
+    } else if (name.endsWith(".py")) {
+      if (!tech.languages.includes("Python")) {
+        tech.languages.push("Python");
+      }
+    } else if (name.endsWith(".go")) {
+      if (!tech.languages.includes("Go")) {
+        tech.languages.push("Go");
+      }
+    } else if (name.endsWith(".rs")) {
+      if (!tech.languages.includes("Rust")) {
+        tech.languages.push("Rust");
+      }
+    }
+  }
+
+  if (tech.runtime.length === 0 && tech.languages.includes("TypeScript")) {
+    tech.runtime.push("Node.js");
+  }
+
+  return tech;
+}
+
 export function createSystemPrompt(): string {
-  return `You are an expert software architect and code analyst. Your role is to analyze and summarize codebases for other AI agents and developers.
+  return `You are an expert software architect and code analyst. Your role is to analyze and summarize codebases for OTHER AI AGENTS that will use this summary to understand and work with the codebase.
+
+CRITICAL: Your output will be used by another AI, so be thorough and specific!
 
 When analyzing code:
 1. Identify the project's purpose and architecture
@@ -10,19 +111,44 @@ When analyzing code:
 3. Understand the directory structure and module organization
 4. Note important dependencies and how they're used
 5. Identify patterns, frameworks, and technologies used
+6. DETERMINE THE EXACT RUNTIME (Bun, Node.js, Deno) - check for bun.lockb, bun.lock, deno.json, package-lock.json, pnpm-lock.yaml, yarn.lock
+7. DETERMINE THE PACKAGE MANAGER (Bun, pnpm, Yarn, npm) - this is critical for reproduction
+8. Identify the primary language(s) used
 
-Output Format:
+Tech Stack Detection Rules:
+- If you see "bun.lockb" or "bun.lock" → Runtime is Bun, Package Manager is Bun
+- If you see "pnpm-lock.yaml" → Package Manager is pnpm
+- If you see "yarn.lock" → Package Manager is Yarn
+- If you see "package-lock.json" → Package Manager is npm
+- If you see "deno.json" or "deno.jsonc" → Runtime is Deno
+- Check package.json "packageManager" field and "engines" field if available
+
+Output Format for OTHER AIs:
 - Use proper markdown headings (##, ###)
 - Use bullet points for lists
 - Use tables for structured data comparisons
 - Use code blocks for file paths and code snippets
 - Keep formatting clean and consistent
 
+Your summary must enable another AI to:
+- Run the project (know exact install/dev/build commands)
+- Understand the architecture to make informed changes
+- Find the right files to modify for specific features
+- Understand dependencies and their purposes
+
+ALWAYS include:
+- Exact runtime (Bun/Node.js/Deno) - NEVER say "Node.js" when Bun is used!
+- Exact package manager (Bun/pnpm/Yarn/npm)
+- Available CLI commands (from package.json scripts)
+- Entry points and main modules
+- Key configuration files and what they control
+
 Provide clear, concise summaries that help others understand the project quickly.`;
 }
 
 export function createProjectSummaryPrompt(analysis: ProjectAnalysis): string {
   const { totalFiles, totalDirectories, size, tree, allImportantFiles } = analysis;
+  const techStack = detectTechStack(analysis);
 
   let prompt = "# Project Analysis\n\n";
 
@@ -30,6 +156,21 @@ export function createProjectSummaryPrompt(analysis: ProjectAnalysis): string {
   prompt += `- Total Files: ${totalFiles}\n`;
   prompt += `- Total Directories: ${totalDirectories}\n`;
   prompt += `- Project Size: ${size}\n\n`;
+
+  if (techStack.languages.length > 0) {
+    prompt += "## Technology Stack\n";
+    if (techStack.runtime.length > 0) {
+      prompt += `- **Runtime:** ${techStack.runtime.join(", ")}\n`;
+    }
+    if (techStack.packageManager.length > 0) {
+      prompt += `- **Package Manager:** ${techStack.packageManager.join(", ")}\n`;
+    }
+    if (techStack.frameworks.length > 0) {
+      prompt += `- **Frameworks:** ${techStack.frameworks.join(", ")}\n`;
+    }
+    prompt += `- **Languages:** ${techStack.languages.join(", ")}\n`;
+    prompt += "\n";
+  }
 
   prompt += "## Project Structure\n";
   prompt += "```\n";
@@ -343,14 +484,25 @@ export function createSelectedFilesPrompt(files: AnalyzedFile[]): string {
 
 export function createFinalSummaryPrompt(): string {
   let prompt = "\n## Final Summary\n";
-  prompt += "Based on the file contents above, provide a comprehensive summary of:\n";
-  prompt += "1. Project purpose and functionality\n";
-  prompt += "2. Architecture and code organization\n";
-  prompt += "3. Key technologies, frameworks, and dependencies\n";
-  prompt += "4. Entry points and main modules\n";
-  prompt += "5. Configuration files and their purposes\n\n";
   prompt +=
-    "Use markdown headings (##, ###), bullet points, tables, and code blocks for clear formatting.";
+    "Based on the file contents above, provide a comprehensive summary that OTHER AI AGENTS can use to understand and work with this codebase.\n\n";
+  prompt += "Your summary MUST include:\n";
+  prompt += "1. **Project purpose** - What does this project do?\n";
+  prompt += "2. **Runtime & Package Manager** - Bun, Node.js, Deno? Bun, pnpm, npm, Yarn?\n";
+  prompt +=
+    "3. **Architecture** - How is the code organized? (MVC, layered, clean architecture, etc.)\n";
+  prompt += "4. **Key technologies** - All frameworks, libraries, and tools used\n";
+  prompt +=
+    "5. **Entry points** - Where does execution start? (main.ts, cli.ts, server.ts, etc.)\n";
+  prompt += "6. **Configuration** - Key config files and what they control\n";
+  prompt += "7. **Dependencies** - Important dependencies and their purposes\n";
+  prompt += "8. **CLI commands** - Available npm/bun scripts (dev, build, start, etc.)\n\n";
+  prompt += "Format your response so another AI can:\n";
+  prompt += "- Understand the project structure without reading all files\n";
+  prompt += "- Know exactly which commands to run (install, dev, build, test)\n";
+  prompt += "- Understand the architecture to make informed changes\n";
+  prompt += "- Identify the right files to modify for specific features\n\n";
+  prompt += "Use markdown headings (##, ###), bullet points, tables, and code blocks.";
 
   return prompt;
 }

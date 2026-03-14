@@ -3,7 +3,7 @@ import path from "node:path";
 import { defineCommand } from "citty";
 import { summarizeProject, summarizeWithAI } from "../core/summarizer";
 import { GetConfig, validateConfig } from "../utils/config";
-import { error, info, success } from "../utils/logger";
+import { error, info, startSpinner, stopSpinner, success } from "../utils/logger";
 import { formatMarkdownContent } from "../utils/markdown";
 
 export interface RunArgs {
@@ -48,15 +48,17 @@ export async function run(args: RunArgs): Promise<void> {
     return;
   }
 
-  info("Generating AI summary...");
+  startSpinner("Generating AI summary...");
 
   try {
     const aiResult = await summarizeWithAI(srcPath, config.model, options);
+    stopSpinner();
 
     await writeOutput(aiResult.summary, config.output);
 
     success(`Summary generated and saved to ${config.output}/context.md`);
   } catch (err) {
+    stopSpinner();
     error(`AI summary failed: ${err}`);
     const context = summary || generateBriefContext(analysis, strategy);
     await writeOutput(context, config.output);
