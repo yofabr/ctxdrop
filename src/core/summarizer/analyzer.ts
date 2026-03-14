@@ -35,6 +35,8 @@ export async function analyzeProject(
     .filter((f) => f.classification.priority <= 2)
     .sort((a, b) => a.classification.priority - b.classification.priority);
 
+  const allFiles = analyzedFiles.sort((a, b) => a.relativePath.localeCompare(b.relativePath));
+
   const tree = buildFileTree(analyzedDirectories, analyzedFiles);
 
   const totalSize = analyzedFiles.reduce((sum, f) => sum + f.size, 0);
@@ -48,6 +50,7 @@ export async function analyzeProject(
     tree,
     directories: analyzedDirectories,
     allImportantFiles,
+    allFiles,
   };
 
   return { analysis, strategy };

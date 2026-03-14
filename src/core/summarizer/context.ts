@@ -233,3 +233,124 @@ export function generateBriefContext(analysis: ProjectAnalysis, strategy: Summar
 
   return briefMessages.map((m) => m.content).join("\n\n");
 }
+
+export function createFileSelectionPrompt(analysis: ProjectAnalysis, maxFiles = 15): string {
+  const { tree, allImportantFiles } = analysis;
+
+  let prompt = "# File Selection\n\n";
+  prompt +=
+    "Analyze the project structure below and select the most important files that would help you understand this codebase.\n\n";
+  prompt += "## Project Structure\n";
+  prompt += "```\n";
+  prompt += tree;
+  prompt += "\n```\n\n";
+
+  if (allImportantFiles.length > 0) {
+    prompt += "## Available Important Files\n";
+    for (const file of allImportantFiles) {
+      prompt += `- ${file.relativePath}\n`;
+    }
+    prompt += "\n";
+  }
+
+  prompt += "## Your Task\n";
+  prompt += `Select up to ${maxFiles} files that are most critical for understanding this project. `;
+  prompt += "Focus on entry points, main modules, configuration files, and core functionality.\n\n";
+  prompt += "Respond ONLY with a list of file paths, one per line. ";
+  prompt += "No other text. Example:\n";
+  prompt += "src/index.ts\n";
+  prompt += "src/config.ts\n";
+  prompt += "package.json\n";
+
+  return prompt;
+}
+
+export function createFileSelectionMessages(analysis: ProjectAnalysis): ChatMessage[] {
+  const messages: ChatMessage[] = [];
+
+  const systemPrompt = createSystemPrompt();
+  messages.push({ role: "system", content: systemPrompt });
+
+  const selectionPrompt = createFileSelectionPrompt(analysis);
+  messages.push({ role: "user", content: selectionPrompt });
+
+  return messages;
+}
+
+export function parseFileSelection(aiResponse: string, availableFiles: string[]): string[] {
+  const lines = aiResponse.split("\n");
+  const selectedPaths: string[] = [];
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    const cleanPath = trimmed
+      .replace(/^[-•*`]\s*/, "")
+      .replace(/\s*\(.*?\)\s*$/, "")
+      .trim();
+
+    if (
+      cleanPath.includes("/") ||
+      cleanPath.endsWith(".ts") ||
+      cleanPath.endsWith(".js") ||
+      cleanPath.endsWith(".json") ||
+      cleanPath.endsWith(".md") ||
+      cleanPath.endsWith(".yaml") ||
+      cleanPath.endsWith(".yml") ||
+      cleanPath.endsWith(".toml") ||
+      cleanPath.endsWith(".py") ||
+      cleanPath.endsWith(".go") ||
+      cleanPath.endsWith(".rs") ||
+      cleanPath.endsWith(".java")
+    ) {
+      if (availableFiles.some((f) => f.endsWith(cleanPath) || f.includes(cleanPath))) {
+        const matchedFile = availableFiles.find((f) => f.endsWith(cleanPath) || f === cleanPath);
+        if (matchedFile && !selectedPaths.includes(matchedFile)) {
+          selectedPaths.push(matchedFile);
+        }
+      }
+    }
+  }
+
+  return selectedPaths;
+}
+
+export function createSelectedFilesPrompt(files: AnalyzedFile[]): string {
+  if (files.length === 0) {
+    return "";
+  }
+
+  let prompt = "## Selected Files for Detailed Analysis\n\n";
+
+  for (const file of files) {
+    if (!file.content) continue;
+
+    const maxContentLength = 20000;
+    const truncatedContent =
+      file.content.length > maxContentLength
+        ? `${file.content.slice(0, maxContentLength)}\n... [truncated]`
+        : file.content;
+
+    prompt += `### ${file.relativePath}\n`;
+    prompt += `\`\`\`${getLanguageFromExt(file.extension)}\n`;
+    prompt += truncatedContent;
+    prompt += "\n```\n\n";
+  }
+
+  return prompt;
+}
+
+export function createFinalSummaryPrompt(): string {
+  let prompt = "\n## Final Summary\n";
+  prompt += "Based on the file contents above, provide a comprehensive summary of:\n";
+  prompt += "1. Project purpose and functionality\n";
+  prompt += "2. Architecture and code organization\n";
+  prompt += "3. Key technologies, frameworks, and dependencies\n";
+  prompt += "4. Entry points and main modules\n";
+  prompt += "5. Configuration files and their purposes\n\n";
+  prompt +=
+    "Use markdown headings (##, ###), bullet points, tables, and code blocks for clear formatting.";
+
+  return prompt;
+}

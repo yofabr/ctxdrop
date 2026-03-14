@@ -3,9 +3,13 @@ import type { ModelConfig } from "../../agents/types.js";
 import { analyzeProject, quickScan } from "./analyzer.js";
 import {
   createDirectorySummaryPrompt,
+  createFileSelectionMessages,
+  createFinalSummaryPrompt,
   createProjectSummaryPrompt,
+  createSelectedFilesPrompt,
   generateBriefContext,
   generateContextMessages,
+  parseFileSelection,
 } from "./context.js";
 import { SIZE_THRESHOLDS, determineProjectSize, getStrategy } from "./strategy.js";
 import type {
@@ -44,12 +48,67 @@ export async function summarizeWithAI(
 ): Promise<{ summary: string; context: string }> {
   const { analysis, strategy } = await analyzeProject(rootPath, options);
 
+  const useTwoPass = options?.twoPass ?? true;
+
+  if (useTwoPass) {
+    return summarizeWithTwoPass(rootPath, analysis, modelConfig, options);
+  }
+
   const agent = createAgent(modelConfig);
 
   const messages = generateContextMessages(analysis, strategy);
 
   const response = await agent.chat({
     messages,
+    max_tokens: options?.maxTokens ?? 8192,
+  });
+
+  return {
+    summary: response.content,
+    context: generateBriefContext(analysis, strategy),
+  };
+}
+
+async function summarizeWithTwoPass(
+  rootPath: string,
+  analysis: ProjectAnalysis,
+  modelConfig: ModelConfig,
+  options?: SummarizeOptions,
+): Promise<{ summary: string; context: string }> {
+  const { analysis: fullAnalysis, strategy } = await analyzeProject(rootPath, {
+    ...options,
+    includeContents: true,
+  });
+
+  const agent = createAgent(modelConfig);
+
+  const selectionMessages = createFileSelectionMessages(analysis);
+  const selectionResponse = await agent.chat({
+    messages: selectionMessages,
+    max_tokens: 1024,
+  });
+
+  const availablePaths = analysis.allImportantFiles.map((f) => f.relativePath);
+  const selectedPaths = parseFileSelection(selectionResponse.content, availablePaths);
+
+  const selectedFiles = fullAnalysis.allFiles.filter((f) => selectedPaths.includes(f.relativePath));
+
+  const selectedFilesContent = selectedFiles.filter((f) => f.content);
+
+  const projectSummary = createProjectSummaryPrompt(analysis);
+  const selectedFilesPrompt = createSelectedFilesPrompt(selectedFilesContent);
+  const finalPrompt = createFinalSummaryPrompt();
+
+  const finalMessages: { role: "system" | "user"; content: string }[] = [];
+
+  const { createSystemPrompt } = await import("./context.js");
+  finalMessages.push({ role: "system", content: createSystemPrompt() });
+  finalMessages.push({ role: "user", content: projectSummary });
+  finalMessages.push({ role: "user", content: selectedFilesPrompt });
+  finalMessages.push({ role: "user", content: finalPrompt });
+
+  const response = await agent.chat({
+    messages: finalMessages,
     max_tokens: options?.maxTokens ?? 8192,
   });
 

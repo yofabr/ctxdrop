@@ -22,7 +22,7 @@ export async function formatMarkdownContent(content: string): Promise<string> {
       if (result && typeof result === "object" && "formattedTable" in result) {
         const r = result as { success?: boolean; formattedTable: string };
         if (r.success && r.formattedTable) {
-          formattedContent = formattedContent.replace(table, r.formattedTable + "\n");
+          formattedContent = formattedContent.replace(table, `${r.formattedTable}\n`);
         }
       }
     } catch {

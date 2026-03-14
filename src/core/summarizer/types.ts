@@ -40,6 +40,7 @@ export interface ProjectAnalysis {
   tree: string;
   directories: DirectoryAnalysis[];
   allImportantFiles: AnalyzedFile[];
+  allFiles: AnalyzedFile[];
 }
 
 export interface SummaryStrategy {
@@ -55,6 +56,7 @@ export interface SummarizeOptions {
   maxTokens?: number;
   style?: "detailed" | "brief" | "minimal";
   includeContents?: boolean;
+  twoPass?: boolean;
 }
 
 export interface SummarizerResult {
