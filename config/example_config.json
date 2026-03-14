@@ -5,5 +5,5 @@
     "api_base": "https://api.openai.com/v1"
   },
   "src": "./src/",
-  "output": "./"
+  "output": "./context"
 }

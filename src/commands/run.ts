@@ -55,12 +55,12 @@ export async function run(args: RunArgs): Promise<void> {
 
     await writeOutput(aiResult.summary, config.output);
 
-    success(`Summary generated and saved to ${config.output}context.md`);
+    success(`Summary generated and saved to ${config.output}/context.md`);
   } catch (err) {
     error(`AI summary failed: ${err}`);
     const context = summary || generateBriefContext(analysis, strategy);
     await writeOutput(context, config.output);
-    info(`Saved structure summary instead to ${config.output}context.md`);
+    info(`Saved structure summary instead to ${config.output}/context.md`);
   }
 }
 
@@ -101,8 +101,10 @@ function generateBriefContext(
   return lines.join("\n");
 }
 
-async function writeOutput(content: string, outputDir?: string): Promise<void> {
-  const outputPath = path.resolve(outputDir || "./", "context.md");
+async function writeOutput(content: string, outputDir: string): Promise<void> {
+  const outputPath = path.resolve(outputDir, "context.md");
+
+  await fs.mkdir(outputDir, { recursive: true });
 
   const formattedContent = await formatMarkdownContent(content);
 
@@ -127,7 +129,7 @@ const runCommand = defineCommand({
       type: "string",
       short: "o",
       description: "Output directory",
-      default: "./",
+      default: "./context",
     },
     style: {
       type: "string",

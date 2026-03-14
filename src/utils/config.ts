@@ -34,7 +34,7 @@ export const DEFAULT_CONFIG: Config = {
     api_base: "https://api.openai.com/v1",
   },
   src: "./src/",
-  output: "./",
+  output: "./context",
 };
 
 export function getDefaultConfig(): Config {
