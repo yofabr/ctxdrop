@@ -139,3 +139,6 @@ dist
 # Bun
 bun.lockb
 bun.lock
+
+# Local config
+ctxdrop.json
