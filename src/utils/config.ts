@@ -12,6 +12,12 @@ export interface Config {
   };
   src: string;
   output: string;
+  rules?: {
+    enabled?: boolean;
+    files?: string[];
+    loadFromParents?: boolean;
+  };
+  ignoreFiles?: string[];
 }
 
 export interface ValidationError {
@@ -35,6 +41,12 @@ export const DEFAULT_CONFIG: Config = {
   },
   src: "./src/",
   output: "./context",
+  rules: {
+    enabled: true,
+    files: ["AGENTS.md", "CLAUDE.md"],
+    loadFromParents: true,
+  },
+  ignoreFiles: [".gitignore"],
 };
 
 export function getDefaultConfig(): Config {
@@ -146,6 +158,13 @@ export async function GetConfig(configPath?: string): Promise<{ config: Config; 
         },
         src: parsed.src ?? DEFAULT_CONFIG.src,
         output: parsed.output ?? DEFAULT_CONFIG.output,
+        rules: {
+          enabled: parsed.rules?.enabled ?? DEFAULT_CONFIG.rules?.enabled ?? true,
+          files: parsed.rules?.files ?? DEFAULT_CONFIG.rules?.files ?? ["AGENTS.md", "CLAUDE.md"],
+          loadFromParents:
+            parsed.rules?.loadFromParents ?? DEFAULT_CONFIG.rules?.loadFromParents ?? true,
+        },
+        ignoreFiles: parsed.ignoreFiles ?? DEFAULT_CONFIG.ignoreFiles ?? [".gitignore"],
       },
       isNew: false,
     };
