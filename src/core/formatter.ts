@@ -1,6 +1,6 @@
 import type { FileInfo } from "./scanner";
 
-export type OutputFormat = "md" | "xml" | "txt" | "structure" | "manifest";
+export type OutputFormat = "md" | "xml" | "txt" | "structure" | "manifest" | "structured";
 
 export interface FormatterOptions {
   format: OutputFormat;
@@ -21,6 +21,8 @@ export function formatOutput(files: FileInfo[], options: FormatterOptions): stri
       return formatStructureOnly(files);
     case "manifest":
       return formatManifest(files);
+    case "structured":
+      return formatStructured(files);
     default:
       return formatMarkdown(files);
   }
@@ -197,4 +199,56 @@ function formatManifest(files: FileInfo[]): string {
   }
 
   return JSON.stringify(manifest, null, 2);
+}
+
+function formatStructured(files: FileInfo[]): string {
+  const parts: string[] = ["# Project Context\n"];
+  parts.push("\n## Summary\n");
+  parts.push(`Total files: ${files.length}\n`);
+  parts.push("\n## Structure Map\n");
+  parts.push("| File | Type | Structures |\n");
+  parts.push("|------|------|------------|\n");
+
+  for (const file of files) {
+    const structures = file.content ? extractStructures(file.content) : [];
+    const ext = file.relativePath.split(".").pop() || "";
+    const type = getFileType(ext);
+
+    if (structures.length > 0) {
+      const structureList = structures
+        .slice(0, 3)
+        .map((s) => s.name)
+        .join(", ");
+      const more = structures.length > 3 ? ` +${structures.length - 3}` : "";
+      parts.push(`| ${file.relativePath} | ${type} | ${structureList}${more} |\n`);
+    } else {
+      parts.push(`| ${file.relativePath} | ${type} | - |\n`);
+    }
+  }
+
+  parts.push("\n## On-Demand Loading\n");
+  parts.push("Use line ranges to read specific sections:\n");
+  parts.push("```\n");
+  parts.push("# Example: Read lines 10-30 from a file\n");
+  parts.push("```\n");
+
+  return parts.join("");
+}
+
+function getFileType(extension: string): string {
+  const types: Record<string, string> = {
+    ts: "TypeScript",
+    tsx: "TypeScript React",
+    js: "JavaScript",
+    jsx: "React",
+    json: "JSON",
+    md: "Markdown",
+    py: "Python",
+    go: "Go",
+    rs: "Rust",
+    java: "Java",
+    rb: "Ruby",
+    sh: "Shell",
+  };
+  return types[extension] || extension.toUpperCase();
 }
