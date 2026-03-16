@@ -10,6 +10,7 @@ import {
   createSelectedFilesPrompt,
   generateBriefContext,
   generateContextMessages,
+  loadProjectRules,
   parseFileSelection,
 } from "./context.js";
 import { SIZE_THRESHOLDS, determineProjectSize, getStrategy } from "./strategy.js";
@@ -30,6 +31,18 @@ export async function summarizeProject(
   const { analysis, strategy } = await analyzeProject(rootPath, options);
 
   let summary = "";
+  let rules: SummarizerResult["rules"] | undefined;
+
+  if (options?.loadRules !== false) {
+    const loadedRules = await loadProjectRules(rootPath);
+    if (loadedRules.hasRules) {
+      rules = {
+        files: loadedRules.files,
+        content: loadedRules.content,
+        hasRules: loadedRules.hasRules,
+      };
+    }
+  }
 
   if (options?.style && options.style !== "minimal") {
     summary = generateBriefContext(analysis, strategy);
@@ -39,6 +52,7 @@ export async function summarizeProject(
     analysis,
     strategy,
     summary,
+    rules,
   };
 }
 

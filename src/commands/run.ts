@@ -2,6 +2,7 @@ import fs from "node:fs/promises";
 import path from "node:path";
 import { defineCommand } from "citty";
 import { summarizeProject, summarizeWithAI } from "../core/summarizer";
+import { createRulesSection } from "../core/summarizer/context";
 import { GetConfig, validateConfig } from "../utils/config";
 import { error, info, startSpinner, stopSpinner, success } from "../utils/logger";
 import { formatMarkdownContent } from "../utils/markdown";
@@ -11,6 +12,8 @@ export interface RunArgs {
   output?: string;
   style?: "detailed" | "brief" | "minimal";
   noai?: boolean;
+  rules?: boolean;
+  claudeignore?: boolean;
 }
 
 export async function run(args: RunArgs): Promise<void> {
@@ -31,20 +34,35 @@ export async function run(args: RunArgs): Promise<void> {
   info(`Analyzing project: ${srcPath}`);
 
   const style = args.style ?? "brief";
-  const options = { style };
+  const loadRules = args.rules ?? true;
+  const loadClaudeignore = args.claudeignore ?? false;
+
+  const options = {
+    style,
+    loadRules,
+    loadGitignore: true,
+    loadClaudeignore,
+  };
 
   const result = await summarizeProject(srcPath, options);
 
-  const { analysis, strategy, summary } = result;
+  const { analysis, strategy, summary, rules } = result;
 
   info(
     `Project size: ${analysis.size} (${analysis.totalFiles} files, ${analysis.totalDirectories} directories)`,
   );
   info(`Strategy: ${strategy.name}`);
 
+  let outputContent = "";
+
+  if (rules?.hasRules) {
+    outputContent += createRulesSection(rules);
+  }
+
   if (args.noai) {
     const context = summary || generateBriefContext(analysis, strategy);
-    await writeOutput(context, config.output);
+    outputContent += context;
+    await writeOutput(outputContent, config.output);
     return;
   }
 
@@ -54,14 +72,19 @@ export async function run(args: RunArgs): Promise<void> {
     const aiResult = await summarizeWithAI(srcPath, config.model, options);
     stopSpinner();
 
-    await writeOutput(aiResult.summary, config.output);
+    let fullContent = aiResult.summary;
+    if (rules?.hasRules) {
+      fullContent = createRulesSection(rules) + fullContent;
+    }
+
+    await writeOutput(fullContent, config.output);
 
     success(`Summary generated and saved to ${config.output}/context.md`);
   } catch (err) {
     stopSpinner();
     error(`AI summary failed: ${err}`);
-    const context = summary || generateBriefContext(analysis, strategy);
-    await writeOutput(context, config.output);
+    outputContent += summary || generateBriefContext(analysis, strategy);
+    await writeOutput(outputContent, config.output);
     info(`Saved structure summary instead to ${config.output}/context.md`);
   }
 }
@@ -142,6 +165,16 @@ const runCommand = defineCommand({
     noai: {
       type: "boolean",
       description: "Skip AI summary, only generate structure",
+      default: false,
+    },
+    rules: {
+      type: "boolean",
+      description: "Load AGENTS.md/CLAUDE.md rules (default: true)",
+      default: true,
+    },
+    claudeignore: {
+      type: "boolean",
+      description: "Load .claudeignore patterns",
       default: false,
     },
   },

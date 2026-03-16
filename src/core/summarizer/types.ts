@@ -57,12 +57,20 @@ export interface SummarizeOptions {
   style?: "detailed" | "brief" | "minimal";
   includeContents?: boolean;
   twoPass?: boolean;
+  loadRules?: boolean;
+  loadGitignore?: boolean;
+  loadClaudeignore?: boolean;
 }
 
 export interface SummarizerResult {
   analysis: ProjectAnalysis;
   strategy: SummaryStrategy;
   summary: string;
+  rules?: {
+    files: string[];
+    content: string;
+    hasRules: boolean;
+  };
 }
 
 export interface DirectoryContext {
