@@ -197,4 +197,11 @@ export const DEFAULT_IGNORE_PATTERNS: IgnorePattern[] = [
   ".babelrc*",
   "tsconfig*.json",
   "*.tsbuildinfo",
+
+  // AI Agent context files
+  ".claudeignore",
+  "CLAUDE.md",
+  "AGENTS.md",
+  "AGENT.md",
+  ".cursorrules",
 ];
