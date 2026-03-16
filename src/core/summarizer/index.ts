@@ -1,7 +1,7 @@
 import { createAgent } from "../../agents/index.js";
 import type { ModelConfig } from "../../agents/types.js";
 import { info, success } from "../../utils/logger.js";
-import { analyzeProject, quickScan } from "./analyzer.js";
+import { analyzeProject, detectCodeStructure, quickScan } from "./analyzer.js";
 import {
   createDirectorySummaryPrompt,
   createFileSelectionMessages,
@@ -16,6 +16,7 @@ import {
 import { SIZE_THRESHOLDS, determineProjectSize, getStrategy } from "./strategy.js";
 import type {
   AnalyzedFile,
+  CodeStructure,
   DirectoryAnalysis,
   ProjectAnalysis,
   ProjectSize,
@@ -170,6 +171,7 @@ export async function* streamSummaryWithAI(
 export {
   analyzeProject,
   quickScan,
+  detectCodeStructure,
   createProjectSummaryPrompt,
   createDirectorySummaryPrompt,
   generateContextMessages,
@@ -181,6 +183,7 @@ export {
 
 export type {
   AnalyzedFile,
+  CodeStructure,
   DirectoryAnalysis,
   ProjectAnalysis,
   ProjectSize,

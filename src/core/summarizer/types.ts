@@ -8,6 +8,13 @@ export interface FileClassification {
   reason?: string;
 }
 
+export interface CodeStructure {
+  type: "function" | "class" | "interface" | "type" | "const" | "export";
+  name: string;
+  start: number;
+  end: number;
+}
+
 export interface AnalyzedFile {
   path: string;
   relativePath: string;
@@ -16,6 +23,7 @@ export interface AnalyzedFile {
   classification: FileClassification;
   size: number;
   content?: string;
+  structures?: CodeStructure[];
 }
 
 export interface DirectoryAnalysis {

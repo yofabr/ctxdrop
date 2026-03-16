@@ -6,11 +6,85 @@ import { classifyFile, sortByPriority } from "./classifier.js";
 import { type SummaryStrategy, determineProjectSize, getStrategy } from "./strategy.js";
 import type {
   AnalyzedFile,
+  CodeStructure,
   DirectoryAnalysis,
   ProjectAnalysis,
   ProjectSize,
   SummarizeOptions,
 } from "./types.js";
+
+const STRUCTURE_PATTERNS: { type: CodeStructure["type"]; patterns: RegExp[] }[] = [
+  {
+    type: "function",
+    patterns: [
+      /^function\s+(\w+)/gm,
+      /^(?:export\s+)?async\s+function\s+(\w+)/gm,
+      /^(?:export\s+)?function\s+(\w+)/gm,
+    ],
+  },
+  {
+    type: "class",
+    patterns: [/^(?:export\s+)?class\s+(\w+)/gm],
+  },
+  {
+    type: "interface",
+    patterns: [/^(?:export\s+)?interface\s+(\w+)/gm],
+  },
+  {
+    type: "type",
+    patterns: [/^(?:export\s+)?type\s+(\w+)/gm],
+  },
+  {
+    type: "const",
+    patterns: [/^(?:export\s+)?const\s+(\w+)\s*=/gm],
+  },
+  {
+    type: "export",
+    patterns: [
+      /^(?:export\s+)?(?:default\s+)?(?:async\s+)?(?:function|class|const|let|var)\s+(\w+)/gm,
+    ],
+  },
+];
+
+export function detectCodeStructure(content: string): CodeStructure[] {
+  const structures: CodeStructure[] = [];
+
+  for (const { type, patterns } of STRUCTURE_PATTERNS) {
+    for (const pattern of patterns) {
+      const regex = new RegExp(pattern.source, pattern.flags);
+      let match: RegExpExecArray | null = regex.exec(content);
+      while (match !== null) {
+        const name = match[1];
+        if (name) {
+          const beforeMatch = content.substring(0, match.index);
+          const startLine = beforeMatch.split("\n").length;
+
+          let endLine = startLine;
+          const braceStart = content.indexOf("{", match.index);
+          if (braceStart !== -1) {
+            let braceCount = 0;
+            for (let i = braceStart; i < content.length; i++) {
+              if (content[i] === "{") braceCount++;
+              if (content[i] === "}") braceCount--;
+              if (braceCount === 0) {
+                endLine = content.substring(0, i).split("\n").length;
+                break;
+              }
+            }
+          }
+
+          const existing = structures.find((s) => s.name === name && s.start === startLine);
+          if (!existing) {
+            structures.push({ type, name, start: startLine, end: endLine });
+          }
+        }
+        match = regex.exec(content);
+      }
+    }
+  }
+
+  return structures.sort((a, b) => a.start - b.start);
+}
 
 export async function analyzeProject(
   rootPath: string,
@@ -145,7 +219,9 @@ async function analyzeFiles(
       try {
         verbose(`Reading file: ${file.relativePath}`);
         const content = await fs.readFile(file.path, "utf-8");
-        analyzedFile.content = content.slice(0, 50000);
+        const truncatedContent = content.slice(0, 50000);
+        analyzedFile.content = truncatedContent;
+        analyzedFile.structures = detectCodeStructure(truncatedContent);
       } catch {
         analyzedFile.content = undefined;
       }
