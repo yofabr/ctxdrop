@@ -5,5 +5,11 @@
     "api_base": "https://api.openai.com/v1"
   },
   "src": "./src/",
-  "output": "./context"
+  "output": "./context",
+  "rules": {
+    "enabled": true,
+    "files": ["AGENTS.md", "CLAUDE.md"],
+    "loadFromParents": true
+  },
+  "ignoreFiles": [".gitignore"]
 }
