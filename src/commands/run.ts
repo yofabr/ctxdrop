@@ -14,6 +14,7 @@ export interface RunArgs {
   noai?: boolean;
   rules?: boolean;
   claudeignore?: boolean;
+  structure?: boolean;
 }
 
 export async function run(args: RunArgs): Promise<void> {
@@ -36,12 +37,14 @@ export async function run(args: RunArgs): Promise<void> {
   const style = args.style ?? "brief";
   const loadRules = args.rules ?? true;
   const loadClaudeignore = args.claudeignore ?? false;
+  const includeStructure = args.structure ?? false;
 
   const options = {
     style,
     loadRules,
     loadGitignore: true,
     loadClaudeignore,
+    includeContents: includeStructure,
   };
 
   const result = await summarizeProject(srcPath, options);
@@ -57,6 +60,11 @@ export async function run(args: RunArgs): Promise<void> {
 
   if (rules?.hasRules) {
     outputContent += createRulesSection(rules);
+  }
+
+  if (includeStructure) {
+    outputContent += generateStructureMap(analysis);
+    outputContent += "\n\n";
   }
 
   if (args.noai) {
@@ -75,6 +83,10 @@ export async function run(args: RunArgs): Promise<void> {
     let fullContent = aiResult.summary;
     if (rules?.hasRules) {
       fullContent = createRulesSection(rules) + fullContent;
+    }
+
+    if (includeStructure) {
+      fullContent += `\n\n${generateStructureMap(analysis)}`;
     }
 
     await writeOutput(fullContent, config.output);
@@ -122,6 +134,49 @@ function generateBriefContext(
       lines.push(`- \`${file.relativePath}\` (${file.classification.type})`);
     }
   }
+
+  return lines.join("\n");
+}
+
+function generateStructureMap(
+  analysis: ReturnType<typeof summarizeProject> extends Promise<infer R>
+    ? R extends { analysis: infer A }
+      ? A
+      : never
+    : never,
+): string {
+  const lines: string[] = [];
+
+  lines.push("## Structure Map");
+  lines.push("");
+  lines.push("| File | Functions/Classes | Lines |");
+  lines.push("|------|-------------------|-------|");
+
+  const importantFilesWithContent = analysis.allFiles.filter(
+    (f) => f.classification.priority <= 2 && f.structures && f.structures.length > 0,
+  );
+
+  for (const file of importantFilesWithContent.slice(0, 20)) {
+    if (!file.structures || file.structures.length === 0) continue;
+
+    const structureNames = file.structures
+      .slice(0, 5)
+      .map((s) => `${s.type}: \`${s.name}\``)
+      .join(", ");
+    const more = file.structures.length > 5 ? ` (+${file.structures.length - 5} more)` : "";
+    const lines_range = `${file.structures[0].start}-${file.structures[file.structures.length - 1].end}`;
+
+    lines.push(`| \`${file.relativePath}\` | ${structureNames}${more} | ${lines_range} |`);
+  }
+
+  lines.push("");
+  lines.push("### On-Demand Loading Guide");
+  lines.push("");
+  lines.push("To read specific functions, use line ranges:");
+  lines.push("```");
+  lines.push("# Read run() function in src/commands/run.ts:16-67");
+  lines.push("# Read analyzeProject in src/core/summarizer/analyzer.ts:88-120");
+  lines.push("```");
 
   return lines.join("\n");
 }
@@ -175,6 +230,12 @@ const runCommand = defineCommand({
     claudeignore: {
       type: "boolean",
       description: "Load .claudeignore patterns",
+      default: false,
+    },
+    structure: {
+      type: "boolean",
+      short: "S",
+      description: "Include code structure map (functions, classes with line ranges)",
       default: false,
     },
   },

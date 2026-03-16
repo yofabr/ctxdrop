@@ -1,6 +1,6 @@
 import type { FileInfo } from "./scanner";
 
-export type OutputFormat = "md" | "xml" | "txt";
+export type OutputFormat = "md" | "xml" | "txt" | "structure";
 
 export interface FormatterOptions {
   format: OutputFormat;
@@ -17,6 +17,8 @@ export function formatOutput(files: FileInfo[], options: FormatterOptions): stri
       return formatXml(files);
     case "txt":
       return formatText(files);
+    case "structure":
+      return formatStructureOnly(files);
     default:
       return formatMarkdown(files);
   }
@@ -72,4 +74,73 @@ function escapeXml(str: string): string {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&apos;");
+}
+
+// Format structure-only output with on-demand loading guide
+function formatStructureOnly(files: FileInfo[]): string {
+  const parts: string[] = ["# Project Context\n"];
+  parts.push("\n## Structure Map\n");
+  parts.push("\n| File | Functions/Classes | Lines |\n");
+  parts.push("|------|-------------------|-------|\n");
+
+  for (const file of files) {
+    if (!file.content) continue;
+
+    const structures = extractStructures(file.content);
+    if (structures.length === 0) continue;
+
+    const structureNames = structures
+      .slice(0, 5)
+      .map((s) => `${s.type}: ${s.name}`)
+      .join(", ");
+    const more = structures.length > 5 ? ` (+${structures.length - 5} more)` : "";
+    const lines = `${structures[0].start}-${structures[structures.length - 1].end}`;
+
+    parts.push(`| ${file.relativePath} | ${structureNames}${more} | ${lines} |\n`);
+  }
+
+  parts.push("\n## On-Demand Loading Guide\n");
+  parts.push("```\n");
+  parts.push("# Read specific function by line range:\n");
+  parts.push("# src/file.ts:10-25  (reads lines 10-25)\n");
+  parts.push("```\n");
+
+  return parts.join("");
+}
+
+interface SimpleStructure {
+  type: string;
+  name: string;
+  start: number;
+  end: number;
+}
+
+function extractStructures(content: string): SimpleStructure[] {
+  const structures: SimpleStructure[] = [];
+  const lines = content.split("\n");
+
+  const patterns = [
+    { type: "function", regex: /^(?:export\s+)?(?:async\s+)?function\s+(\w+)/ },
+    { type: "class", regex: /^(?:export\s+)?class\s+(\w+)/ },
+    { type: "interface", regex: /^(?:export\s+)?interface\s+(\w+)/ },
+    { type: "type", regex: /^(?:export\s+)?type\s+(\w+)/ },
+    { type: "const", regex: /^(?:export\s+)?const\s+(\w+)/ },
+  ];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+    for (const { type, regex } of patterns) {
+      const match = line.match(regex);
+      if (match) {
+        structures.push({
+          type,
+          name: match[1],
+          start: i + 1,
+          end: i + 1,
+        });
+      }
+    }
+  }
+
+  return structures;
 }
