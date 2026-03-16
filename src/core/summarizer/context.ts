@@ -1,5 +1,88 @@
+import fs from "node:fs/promises";
+import path from "node:path";
 import type { ChatMessage } from "../../agents/types.js";
 import type { AnalyzedFile, DirectoryAnalysis, ProjectAnalysis, SummaryStrategy } from "./types.js";
+
+const RULE_FILE_NAMES = ["AGENTS.md", "CLAUDE.md", "AGENT.md"];
+
+export interface LoadedRules {
+  files: string[];
+  content: string;
+  hasRules: boolean;
+}
+
+export async function loadProjectRules(rootPath: string): Promise<LoadedRules> {
+  const result: LoadedRules = {
+    files: [],
+    content: "",
+    hasRules: false,
+  };
+
+  const searchedPaths: string[] = [];
+
+  let currentPath = path.resolve(rootPath);
+  const homeDir = process.env["HOME"] || process.env["USERPROFILE"] || "";
+
+  while (currentPath !== homeDir && currentPath !== path.parse(currentPath).root) {
+    for (const fileName of RULE_FILE_NAMES) {
+      const filePath = path.join(currentPath, fileName);
+      if (!searchedPaths.includes(filePath)) {
+        searchedPaths.push(filePath);
+        try {
+          const content = await fs.readFile(filePath, "utf-8");
+          if (content.trim().length > 0) {
+            result.files.push(filePath);
+            result.content += `\n\n## ${fileName} (${path.relative(rootPath, filePath)})\n\n${content}\n`;
+            result.hasRules = true;
+          }
+        } catch {
+          // File doesn't exist, continue
+        }
+      }
+    }
+
+    const parentPath = path.dirname(currentPath);
+    if (parentPath === currentPath) break;
+    currentPath = parentPath;
+  }
+
+  const globalPaths = [
+    path.join(process.env["HOME"] || "", ".config", "opencode", "AGENTS.md"),
+    path.join(process.env["HOME"] || "", ".claude", "CLAUDE.md"),
+  ];
+
+  for (const filePath of globalPaths) {
+    if (!searchedPaths.includes(filePath)) {
+      searchedPaths.push(filePath);
+      try {
+        const content = await fs.readFile(filePath, "utf-8");
+        if (content.trim().length > 0) {
+          const fileName = path.basename(filePath);
+          result.files.push(filePath);
+          result.content += `\n\n## ${fileName} (global)\n\n${content}\n`;
+          result.hasRules = true;
+        }
+      } catch {
+        // File doesn't exist, continue
+      }
+    }
+  }
+
+  return result;
+}
+
+export function createRulesSection(rules: LoadedRules): string {
+  if (!rules.hasRules) {
+    return "";
+  }
+
+  let section = "## Project Rules & Guidelines\n\n";
+  section += "The following rules were loaded from your project configuration:\n";
+  section += rules.content;
+  section += "\n\n---\n\n";
+
+  return section;
+}
 
 interface TechStack {
   runtime: string[];
