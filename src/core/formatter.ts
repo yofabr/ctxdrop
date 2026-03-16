@@ -1,6 +1,6 @@
 import type { FileInfo } from "./scanner";
 
-export type OutputFormat = "md" | "xml" | "txt" | "structure";
+export type OutputFormat = "md" | "xml" | "txt" | "structure" | "manifest";
 
 export interface FormatterOptions {
   format: OutputFormat;
@@ -19,6 +19,8 @@ export function formatOutput(files: FileInfo[], options: FormatterOptions): stri
       return formatText(files);
     case "structure":
       return formatStructureOnly(files);
+    case "manifest":
+      return formatManifest(files);
     default:
       return formatMarkdown(files);
   }
@@ -143,4 +145,56 @@ function extractStructures(content: string): SimpleStructure[] {
   }
 
   return structures;
+}
+
+interface ManifestFile {
+  priority: number;
+  lines: string;
+  size: number;
+  structures: SimpleStructure[];
+}
+
+interface Manifest {
+  version: string;
+  generated: string;
+  project: {
+    totalFiles: number;
+  };
+  files: Record<string, ManifestFile>;
+  onDemand: {
+    description: string;
+    example: string;
+  };
+}
+
+function formatManifest(files: FileInfo[]): string {
+  const manifest: Manifest = {
+    version: "1.0",
+    generated: new Date().toISOString(),
+    project: {
+      totalFiles: files.length,
+    },
+    files: {},
+    onDemand: {
+      description: "Use line ranges to load specific functions",
+      example: "Read src/file.ts:10-25 for specific function",
+    },
+  };
+
+  for (const file of files) {
+    const structures = file.content ? extractStructures(file.content) : [];
+    const contentLength = file.content?.length || 0;
+
+    manifest.files[file.relativePath] = {
+      priority: contentLength > 0 ? 1 : 2,
+      lines:
+        structures.length > 0
+          ? `${structures[0].start}-${structures[structures.length - 1].end}`
+          : "N/A",
+      size: contentLength,
+      structures: structures.slice(0, 10),
+    };
+  }
+
+  return JSON.stringify(manifest, null, 2);
 }
