@@ -10,6 +10,7 @@ import { formatMarkdownContent } from "../utils/markdown";
 export interface RunArgs {
   config: string;
   output?: string;
+  format?: "md" | "xml" | "txt" | "structure" | "manifest" | "structured";
   style?: "detailed" | "brief" | "minimal";
   noai?: boolean;
   rules?: boolean;
@@ -38,6 +39,7 @@ export async function run(args: RunArgs): Promise<void> {
   const loadRules = args.rules ?? true;
   const loadClaudeignore = args.claudeignore ?? false;
   const includeStructure = args.structure ?? false;
+  const format = args.format ?? "md";
 
   const options = {
     style,
@@ -70,7 +72,7 @@ export async function run(args: RunArgs): Promise<void> {
   if (args.noai) {
     const context = summary || generateBriefContext(analysis, strategy);
     outputContent += context;
-    await writeOutput(outputContent, config.output);
+    await writeOutput(outputContent, config.output, format);
     return;
   }
 
@@ -89,14 +91,14 @@ export async function run(args: RunArgs): Promise<void> {
       fullContent += `\n\n${generateStructureMap(analysis)}`;
     }
 
-    await writeOutput(fullContent, config.output);
+    await writeOutput(fullContent, config.output, format);
 
     success(`Summary generated and saved to ${config.output}/context.md`);
   } catch (err) {
     stopSpinner();
     error(`AI summary failed: ${err}`);
     outputContent += summary || generateBriefContext(analysis, strategy);
-    await writeOutput(outputContent, config.output);
+    await writeOutput(outputContent, config.output, format);
     info(`Saved structure summary instead to ${config.output}/context.md`);
   }
 }
@@ -181,12 +183,26 @@ function generateStructureMap(
   return lines.join("\n");
 }
 
-async function writeOutput(content: string, outputDir: string): Promise<void> {
-  const outputPath = path.resolve(outputDir, "context.md");
+async function writeOutput(
+  content: string,
+  outputDir: string,
+  format: "md" | "xml" | "txt" | "structure" | "manifest" | "structured" = "md",
+): Promise<void> {
+  const extensions: Record<string, string> = {
+    md: "md",
+    xml: "xml",
+    txt: "txt",
+    structure: "md",
+    manifest: "json",
+    structured: "md",
+  };
+
+  const ext = extensions[format] || "md";
+  const outputPath = path.resolve(outputDir, `context.${ext}`);
 
   await fs.mkdir(outputDir, { recursive: true });
 
-  const formattedContent = await formatMarkdownContent(content);
+  const formattedContent = format === "manifest" ? content : await formatMarkdownContent(content);
 
   await fs.writeFile(outputPath, formattedContent, "utf-8");
 
@@ -210,6 +226,12 @@ const runCommand = defineCommand({
       short: "o",
       description: "Output directory",
       default: "./context",
+    },
+    format: {
+      type: "string",
+      short: "f",
+      description: "Output format (md, xml, txt, structure, manifest, structured)",
+      default: "md",
     },
     style: {
       type: "string",
