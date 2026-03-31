@@ -2,7 +2,8 @@
   "model": {
     "model_name": "gpt-4",
     "api_key": "",
-    "api_base": "https://api.openai.com/v1"
+    "api_base": "https://api.openai.com/v1",
+    "provider_type": "openai"
   },
   "src": "./src/",
   "output": "./context",

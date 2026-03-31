@@ -2,6 +2,8 @@ export interface ModelConfig {
   model_name: string;
   api_key: string;
   api_base: string;
+  provider_type?: ProviderType;
+  api_version?: string;
 }
 
 export interface ChatMessage {

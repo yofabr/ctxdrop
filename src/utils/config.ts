@@ -3,12 +3,15 @@ import path from "node:path";
 import readline from "node:readline";
 import { fileURLToPath } from "node:url";
 import { success } from "../utils/logger";
+import type { ProviderType } from "../agents/types";
 
 export interface Config {
   model: {
     model_name: string;
     api_key: string;
     api_base: string;
+    provider_type?: ProviderType;
+    api_version?: string;
   };
   src: string;
   output: string;
@@ -38,6 +41,7 @@ export const DEFAULT_CONFIG: Config = {
     model_name: "gpt-4",
     api_key: "",
     api_base: "https://api.openai.com/v1",
+    provider_type: "openai",
   },
   src: "./src/",
   output: "./context",
@@ -137,6 +141,8 @@ export async function GetConfig(configPath?: string): Promise<{ config: Config; 
           model_name: DEFAULT_CONFIG.model.model_name,
           api_key: DEFAULT_CONFIG.model.api_key,
           api_base: DEFAULT_CONFIG.model.api_base,
+          provider_type: DEFAULT_CONFIG.model.provider_type,
+          api_version: DEFAULT_CONFIG.model.api_version,
         },
         src: DEFAULT_CONFIG.src,
         output: DEFAULT_CONFIG.output,
@@ -155,6 +161,8 @@ export async function GetConfig(configPath?: string): Promise<{ config: Config; 
           model_name: parsed.model?.model_name ?? DEFAULT_CONFIG.model.model_name,
           api_key: parsed.model?.api_key ?? DEFAULT_CONFIG.model.api_key,
           api_base: parsed.model?.api_base ?? DEFAULT_CONFIG.model.api_base,
+          provider_type: parsed.model?.provider_type ?? DEFAULT_CONFIG.model.provider_type,
+          api_version: parsed.model?.api_version ?? DEFAULT_CONFIG.model.api_version,
         },
         src: parsed.src ?? DEFAULT_CONFIG.src,
         output: parsed.output ?? DEFAULT_CONFIG.output,

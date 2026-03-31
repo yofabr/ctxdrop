@@ -1,5 +1,5 @@
 import { createProvider } from "./providers.js";
-import type { AgentRequest, AgentResponse, ChatMessage, ModelConfig, Provider } from "./types.js";
+import type { AgentRequest, AgentResponse, ChatMessage, ModelConfig, Provider, ProviderType } from "./types.js";
 
 export class Agent {
   private provider: Provider;
@@ -8,7 +8,16 @@ export class Agent {
   private defaultMaxTokens: number;
 
   constructor(config: ModelConfig) {
-    this.provider = createProvider("openai", config.api_key, config.api_base);
+    const providerType = (config.provider_type as ProviderType) || "openai";
+    const extra: Record<string, string> = {};
+
+    if (providerType === "azure") {
+      extra.endpoint = config.api_base;
+      extra.deployment = config.model_name;
+      extra.apiVersion = config.api_version || "2024-02-15";
+    }
+
+    this.provider = createProvider(providerType, config.api_key, config.api_base, extra);
     this.model = config.model_name;
     this.defaultTemperature = 0.7;
     this.defaultMaxTokens = 4096;
