@@ -128,7 +128,6 @@ export const DEFAULT_IGNORE_PATTERNS: IgnorePattern[] = [
   "*.nupkg",
 
   // JavaScript/TypeScript (additional)
-  "*.lock",
   ".cache",
 
   // Build outputs
@@ -139,21 +138,6 @@ export const DEFAULT_IGNORE_PATTERNS: IgnorePattern[] = [
   ".nuxt",
   ".output",
   ".svelte-kit",
-
-  // Package managers & lock files
-  "*.lock",
-  "package-lock.json",
-  "yarn.lock",
-  "pnpm-lock.yaml",
-  "bun.lockb",
-  "Cargo.lock",
-  "go.sum",
-  "Gemfile.lock",
-  "composer.lock",
-  "poetry.lock",
-  "Pipfile.lock",
-  "pubspec.lock",
-  "mix.lock",
 
   // OS files
   ".DS_Store",
@@ -177,11 +161,8 @@ export const DEFAULT_IGNORE_PATTERNS: IgnorePattern[] = [
   ".envrc",
 
   // Cache directories
-  ".cache",
   ".parcel-cache",
   ".turbo",
-  ".nuxt",
-  ".next",
 
   // Test coverage
   "coverage",

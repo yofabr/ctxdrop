@@ -68,7 +68,7 @@ async function loadIgnoreFile(rootPath: string, fileName: string): Promise<Ignor
       }
     }
   } catch {
-    // File doesn't exist
+    // File doesn't exist - silently ignore
   }
 
   return patterns;

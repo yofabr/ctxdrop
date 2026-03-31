@@ -145,7 +145,14 @@ async function walkDirectory(
   ignorePatterns?: IgnorePattern[],
   includeContent?: boolean,
 ): Promise<void> {
-  const entries = await readdir(currentPath, { withFileTypes: true });
+  let entries;
+
+  try {
+    entries = await readdir(currentPath, { withFileTypes: true });
+  } catch (err) {
+    console.warn(`Warning: Could not read directory ${currentPath}: ${err}`);
+    return;
+  }
 
   for (const entry of entries) {
     const fullPath = join(currentPath, entry.name);
@@ -165,10 +172,14 @@ async function walkDirectory(
         relativePath,
       };
 
-      // Optionally read file content
+      // Optionally read file content with error handling
       if (includeContent) {
-        const { readFile } = await import("node:fs/promises");
-        fileInfo.content = await readFile(fullPath, "utf-8");
+        try {
+          const { readFile } = await import("node:fs/promises");
+          fileInfo.content = await readFile(fullPath, "utf-8");
+        } catch (err) {
+          console.warn(`Warning: Could not read file ${fullPath}: ${err}`);
+        }
       }
 
       files.push(fileInfo);
