@@ -1,7 +1,7 @@
 import fs from "node:fs/promises";
 import path from "node:path";
 import { defineCommand } from "citty";
-import { summarizeProject, summarizeWithAI } from "../core/summarizer";
+import { summarizeProject, summarizeWithAI, streamSummaryWithAI } from "../core/summarizer";
 import { createRulesSection } from "../core/summarizer/context";
 import { GetConfig, validateConfig } from "../utils/config";
 import { error, info, startSpinner, stopSpinner, success } from "../utils/logger";
@@ -16,9 +16,38 @@ export interface RunArgs {
   rules?: boolean;
   claudeignore?: boolean;
   structure?: boolean;
+  stream?: boolean;
+}
+
+export interface RunArgs {
+  config: string;
+  output?: string;
+  format?: "md" | "xml" | "txt" | "structure" | "manifest" | "structured";
+  style?: "detailed" | "brief" | "minimal";
+  noai?: boolean;
+  rules?: boolean;
+  claudeignore?: boolean;
+  structure?: boolean;
+}
+
+const VALID_FORMATS = ["md", "xml", "txt", "structure", "manifest", "structured"] as const;
+const VALID_STYLES = ["detailed", "brief", "minimal"] as const;
+
+function validateArgs(args: RunArgs): void {
+  if (args.format && !VALID_FORMATS.includes(args.format)) {
+    error(`Invalid format: ${args.format}. Valid options: ${VALID_FORMATS.join(", ")}`);
+    process.exit(1);
+  }
+
+  if (args.style && !VALID_STYLES.includes(args.style)) {
+    error(`Invalid style: ${args.style}. Valid options: ${VALID_STYLES.join(", ")}`);
+    process.exit(1);
+  }
 }
 
 export async function run(args: RunArgs): Promise<void> {
+  validateArgs(args);
+
   const { config, isNew } = await GetConfig(args.config);
 
   if (!isNew) {
@@ -76,13 +105,29 @@ export async function run(args: RunArgs): Promise<void> {
     return;
   }
 
+  const useStream = args.stream ?? false;
+
   startSpinner("Generating AI summary...");
 
   try {
-    const aiResult = await summarizeWithAI(srcPath, config.model, options);
-    stopSpinner();
+    let fullContent = "";
 
-    let fullContent = aiResult.summary;
+    if (useStream) {
+      for await (const chunk of streamSummaryWithAI(srcPath, config.model, options)) {
+        if (chunk.type === "context") {
+          info("Context generated, starting AI summary...");
+        } else {
+          process.stdout.write(chunk.content);
+        }
+      }
+      stopSpinner();
+      fullContent = summary || generateBriefContext(analysis, strategy);
+    } else {
+      const aiResult = await summarizeWithAI(srcPath, config.model, options);
+      stopSpinner();
+      fullContent = aiResult.summary;
+    }
+
     if (rules?.hasRules) {
       fullContent = createRulesSection(rules) + fullContent;
     }
@@ -258,6 +303,11 @@ const runCommand = defineCommand({
       type: "boolean",
       short: "S",
       description: "Include code structure map (functions, classes with line ranges)",
+      default: false,
+    },
+    stream: {
+      type: "boolean",
+      description: "Stream AI summary output to stdout",
       default: false,
     },
   },
